@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>neon-light Demo</title>
+  <style>
+    body {
+      background: #0a0a0a;
+      margin: 0;
+      padding: 40px;
+      font-family: sans-serif;
+    }
+    h2 { color: #666; margin: 40px 0 16px; font-size: 16px; }
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      align-items: center;
+    }
+    .card {
+      background: #111;
+      border-radius: 12px;
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>1. Basic text neon</h2>
+  <div class="card">
+    <neon-light color="#ff69b4" glow="12" font-size="72" style="width:600px;height:120px">
+      霓虹灯效果
+    </neon-light>
+  </div>
+
+  <h2>2. Animated — flicker</h2>
+  <div class="card">
+    <neon-light color="#00ffcc" glow="15" animate="flicker" font-size="64" style="width:600px;height:120px">
+      FLICKER
+    </neon-light>
+  </div>
+
+  <h2>3. Animated — breath</h2>
+  <div class="card">
+    <neon-light color="#ffaa00" glow="12" animate="breath" font-size="64" style="width:600px;height:120px">
+      BREATH
+    </neon-light>
+  </div>
+
+  <h2>4. Animated — glitch</h2>
+  <div class="card">
+    <neon-light color="#ff3355" glow="14" animate="glitch" font-size="64" style="width:600px;height:120px">
+      GLITCH
+    </neon-light>
+  </div>
+
+  <h2>5. Text + SVG icon</h2>
+  <div class="card">
+    <neon-light color="#ff69b4" glow="12" animate="flicker"
+                font-family="YouYuan" font-size="64" style="width:700px;height:120px">
+      巴黎の玫瑰
+    </neon-light>
+  </div>
+
+  <h2>6. Text and SVG with independent config</h2>
+  <div class="card">
+    <neon-light
+      color="#ff69b4" glow="10"
+      text-color="#00ffcc" text-animate="breath"
+      svg-color="#ff4444" svg-glow="20" svg-animate="glitch"
+      font-size="48" style="width:700px;height:120px">
+      NEON
+      <svg viewBox="0 0 24 24" width="48" height="48">
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+    </neon-light>
+  </div>
+
+  <h2>7. Dashed effect</h2>
+  <div class="card">
+    <neon-light color="#ff69b4" glow="10" dashed font-size="64" style="width:600px;height:120px">
+      BROKEN NEON
+    </neon-light>
+  </div>
+
+  <script type="module" src="../index.js"></script>
+</body>
+</html>
