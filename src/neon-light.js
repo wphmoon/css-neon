@@ -1,4 +1,4 @@
-import { OBSERVED_ATTRS, resolveHostConfig } from './config.js';
+import { OBSERVED_ATTRS, resolveHostConfig, resolveTextConfig, resolveSvgConfig } from './config.js';
 import { generateAnimationStyle } from './animations.js';
 import { renderLightDom, buildSvgSurface, buildDefs } from './renderer.js';
 
@@ -30,18 +30,24 @@ class NeonLight extends HTMLElement {
     super();
     this.attachShadow({ mode: 'open' });
     this._observer = null;
+    this._mutObserver = null;
     this._svg = null;
   }
 
   connectedCallback() {
     this._render();
     this._startObserver();
+    this._startMutationObserver();
   }
 
   disconnectedCallback() {
     if (this._observer) {
       this._observer.disconnect();
       this._observer = null;
+    }
+    if (this._mutObserver) {
+      this._mutObserver.disconnect();
+      this._mutObserver = null;
     }
   }
 
@@ -70,8 +76,12 @@ class NeonLight extends HTMLElement {
     this._svg.appendChild(backGroup);
     this._svg.appendChild(frontGroup);
 
-    // Inject animation styles
-    const animCSS = generateAnimationStyle(cfg.animate, cfg.speed);
+    // Inject animation styles — merge host, text, and svg animation configs
+    const textCfg = resolveTextConfig(this);
+    const svgCfg = resolveSvgConfig(this);
+    const animCSS = generateAnimationStyle(cfg.animate, cfg.speed)
+      + generateAnimationStyle(textCfg.animate, textCfg.speed)
+      + generateAnimationStyle(svgCfg.animate, svgCfg.speed);
     const styleEl = document.createElement('style');
     styleEl.textContent = BASE_STYLES + animCSS;
 
@@ -101,6 +111,14 @@ class NeonLight extends HTMLElement {
       if (this._svg) this._render();
     });
     this._observer.observe(this);
+  }
+
+  _startMutationObserver() {
+    if (this._mutObserver) return;
+    this._mutObserver = new MutationObserver(() => {
+      if (this._svg) this._render();
+    });
+    this._mutObserver.observe(this, { childList: true });
   }
 }
 

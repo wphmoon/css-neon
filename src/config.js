@@ -14,13 +14,15 @@ const DEFAULTS = {
   textTransform: 'none',
   letterSpacing: 0,
   svgStrokeWidth: 10,
+  brokenRatio: 0.5,
 };
 
 // Attributes that trigger re-render on change
 const OBSERVED_ATTRS = [
   'color', 'glow', 'blur', 'animate', 'speed', 'dashed',
   'text-color', 'text-glow', 'text-blur', 'text-animate', 'text-speed', 'text-dashed',
-  'svg-color', 'svg-glow', 'svg-blur', 'svg-animate', 'svg-speed', 'svg-dashed', 'svg-stroke-width',
+  'svg-color', 'svg-glow', 'svg-blur', 'svg-animate', 'svg-speed', 'svg-dashed', 'svg-stroke-width', 'svg-broken-ratio',
+  'broken-ratio', 'path-config',
   'font-family', 'font-size', 'font-weight', 'font-style', 'text-transform', 'letter-spacing',
 ];
 
@@ -39,6 +41,7 @@ const PREFIX_MAP = {
   'svg-speed': ['svg', 'speed'],
   'svg-dashed': ['svg', 'dashed'],
   'svg-stroke-width': ['svg', 'svgStrokeWidth'],
+  'svg-broken-ratio': ['svg', 'brokenRatio'],
 };
 
 // Read attribute value from element, fall through cascade chain
@@ -72,6 +75,11 @@ function resolveConfig(el, contentType) {
     textTransform: get('textTransform'),
     letterSpacing: parseNumber(get('letterSpacing'), DEFAULTS.letterSpacing),
     svgStrokeWidth: parseNumber(get('svgStrokeWidth'), DEFAULTS.svgStrokeWidth),
+    // Read kebab-case attribute directly (get() uses camelCase and won't match kebab attr)
+    brokenRatio: parseNumber(
+      readAttr(el, contentType !== 'host' ? `${contentType}-broken-ratio` : null) ||
+      readAttr(el, 'broken-ratio') ||
+      DEFAULTS.brokenRatio, DEFAULTS.brokenRatio),
   };
 }
 

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>css-neon — &lt;neon-light&gt; 使用文档</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #ff69b4;
+    --code-bg: #1c2128;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height: 1.7;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  h1 { font-size: 2em; margin-bottom: 8px; color: var(--accent); }
+  h1 + p { color: var(--muted); margin-bottom: 40px; font-size: 1.05em; }
+  h2 {
+    font-size: 1.3em;
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: #e6edf3;
+  }
+  h3 { font-size: 1.1em; margin: 32px 0 12px; color: #e6edf3; }
+  p { margin-bottom: 12px; }
+  a { color: #58a6ff; }
+  code {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.88em;
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    margin: 16px 0;
+    font-size: 0.88em;
+    line-height: 1.6;
+  }
+  pre code { background: none; padding: 0; border-radius: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0 24px;
+    font-size: 0.93em;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+  }
+  th {
+    background: var(--card);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  td:first-child { white-space: nowrap; }
+  td code { font-size: 0.85em; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .note {
+    background: #1a2332;
+    border-left: 3px solid #58a6ff;
+    padding: 10px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 0.93em;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 0.78em;
+    padding: 1px 8px;
+    border-radius: 10px;
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  .badge-new { background: #1b3a2a; color: #3fb950; }
+  .badge-svg { background: #2a1b3a; color: #a371f7; }
+  .toc { column-count: 2; column-gap: 32px; margin: 24px 0; }
+  .toc a { display: block; padding: 3px 0; }
+  @media (max-width: 600px) { .toc { column-count: 1; } }
+</style>
+</head>
+<body>
+
+<h1>css-neon</h1>
+<p>纯原生 ES Module 霓虹灯特效 Web Component，基于 Shadow DOM v1 和 Custom Elements v1。支持文字和 SVG 两种内容，通过 SVG filter + CSS 动画实现霓虹发光效果。</p>
+
+<div class="toc">
+  <a href="#quickstart">快速开始</a>
+  <a href="#build">从源码构建</a>
+  <a href="#light-dom">Light DOM 内容</a>
+  <a href="#global-attrs">全局属性</a>
+  <a href="#text-attrs">文字专属属性</a>
+  <a href="#svg-attrs">SVG 专属属性</a>
+  <a href="#cascade">配置级联规则</a>
+  <a href="#animations">动画预设</a>
+  <a href="#broken-flow">SVG 断管 &amp; 流光</a>
+  <a href="#path-config">Per-Path 配置</a>
+  <a href="#typography">排版属性</a>
+  <a href="#css-props">CSS 自定义属性</a>
+  <a href="#js-api">JavaScript API</a>
+  <a href="#compat">浏览器兼容性</a>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="quickstart">快速开始</h2>
+
+<pre><code>&lt;script type="module" src="css-neon.js"&gt;&lt;/script&gt;
+
+&lt;neon-light color="#ff69b4" glow="12" font-size="64"
+            style="width:600px;height:120px"&gt;
+  霓虹灯效果
+&lt;/neon-light&gt;</code></pre>
+
+<div class="note">
+  <strong>注意：</strong><code>&lt;neon-light&gt;</code> 必须设置明确的 <code>width</code> 和 <code>height</code>（通过 <code>style</code> 或 CSS）。
+</div>
+
+<!-- ============================================================ -->
+<h2 id="build">从源码构建</h2>
+
+<p><code>css-neon.js</code> 由 <code>build/bundle.js</code> 从 <code>src/</code> 目录下的 6 个源模块自动生成。</p>
+
+<h3>构建命令</h3>
+
+<pre><code>node build/bundle.js</code></pre>
+
+<h3>构建流程</h3>
+
+<ol>
+  <li>读取 <code>src/index.js</code>（入口模块）</li>
+  <li>递归解析 <code>import { ... } from './...'</code> 语句，构建完整依赖图</li>
+  <li>按依赖顺序合并模块（被依赖的在前）：</li>
+</ol>
+
+<div class="card">
+  <code>utils.js</code> &rarr; <code>config.js</code> &rarr; <code>animations.js</code> &rarr; <code>renderer.js</code> &rarr; <code>neon-light.js</code> &rarr; <code>index.js</code>
+</div>
+
+<ol start="4">
+  <li>剥离所有内部 <code>import</code> / <code>export</code> 声明</li>
+  <li>保留入口模块的公开 API：<code>export { NeonLight, define }</code></li>
+  <li>写入 <code>css-neon.js</code>（约 700 行 / 22 KB）</li>
+</ol>
+
+<h3>src/ 模块说明</h3>
+
+<table>
+  <tr><th>模块</th><th>职责</th></tr>
+  <tr><td><code>src/utils.js</code></td><td>SVG 命名空间、元素创建、类型转换</td></tr>
+  <tr><td><code>src/config.js</code></td><td>默认值、属性观察列表、配置级联解析</td></tr>
+  <tr><td><code>src/animations.js</code></td><td>flicker / breath / glitch / broken / flow 五种 CSS 动画</td></tr>
+  <tr><td><code>src/renderer.js</code></td><td>Light DOM 解析、文字/SVG 双层渲染、per-path 配置</td></tr>
+  <tr><td><code>src/neon-light.js</code></td><td>Custom Element 类：Shadow DOM、ResizeObserver、MutationObserver</td></tr>
+  <tr><td><code>src/index.js</code></td><td>入口：自动注册 <code>&lt;neon-light&gt;</code>、公开 <code>define()</code> API</td></tr>
+</table>
+
+<div class="note">
+  <strong>零依赖：</strong>构建脚本仅使用 Node.js 内置模块（<code>fs</code>、<code>path</code>），无需 <code>npm install</code>。
+</div>
+
+<!-- ============================================================ -->
+<h2 id="light-dom">Light DOM 内容</h2>
+
+<p><code>&lt;neon-light&gt;</code> 内部可以放置两种内容，按从左到右的流式布局居中排列：</p>
+
+<table>
+  <tr><th>内容类型</th><th>说明</th></tr>
+  <tr><td>纯文本</td><td>渲染为霓虹发光文字</td></tr>
+  <tr><td><code>&lt;svg&gt;</code> 元素</td><td>提取内部形状（path / circle / rect 等）渲染为霓虹描边</td></tr>
+</table>
+
+<pre><code>&lt;!-- 文字 + SVG 图标 --&gt;
+&lt;neon-light color="#ff69b4" glow="10" font-size="48"
+            style="width:700px;height:120px"&gt;
+  NEON
+  &lt;svg viewBox="0 0 24 24" width="48" height="48"&gt;
+    &lt;circle cx="12" cy="12" r="10"/&gt;
+  &lt;/svg&gt;
+&lt;/neon-light&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="global-attrs">全局属性</h2>
+
+<p>同时作用于文字和 SVG（可被 <code>text-*</code> / <code>svg-*</code> 前缀属性覆盖）。</p>
+
+<table>
+  <tr><th>属性</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+  <tr><td><code>color</code></td><td>color</td><td><code>#ff69b4</code></td><td>霓虹灯颜色</td></tr>
+  <tr><td><code>glow</code></td><td>number</td><td><code>10</code></td><td>外发光强度（影响 blur 层的 stroke-width）</td></tr>
+  <tr><td><code>blur</code></td><td>number</td><td><code>4</code></td><td>高斯模糊量（<code>feGaussianBlur</code> 的 stdDeviation）</td></tr>
+  <tr><td><code>animate</code></td><td>string</td><td><code>none</code></td><td>动画预设：见<a href="#animations">动画章节</a></td></tr>
+  <tr><td><code>speed</code></td><td>number</td><td><code>1</code></td><td>动画速度倍率，越大越快</td></tr>
+  <tr><td><code>dashed</code></td><td>boolean</td><td><code>false</code></td><td>是否启用虚线描边</td></tr>
+  <tr><td><code>broken-ratio</code></td><td>number</td><td><code>0.5</code></td><td>破管比例 0–1<br>仅在 <code>svg-animate="broken"</code> 时生效</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="text-attrs">文字专属属性（<code>text-*</code> 前缀）</h2>
+
+<p>覆盖全局属性，仅作用于文字。命名规则：<code>text-</code> + 全局属性名。</p>
+
+<table>
+  <tr><th>属性</th><th>覆盖</th></tr>
+  <tr><td><code>text-color</code></td><td><code>color</code></td></tr>
+  <tr><td><code>text-glow</code></td><td><code>glow</code></td></tr>
+  <tr><td><code>text-blur</code></td><td><code>blur</code></td></tr>
+  <tr><td><code>text-animate</code></td><td><code>animate</code></td></tr>
+  <tr><td><code>text-speed</code></td><td><code>speed</code></td></tr>
+  <tr><td><code>text-dashed</code></td><td><code>dashed</code></td></tr>
+</table>
+
+<pre><code>&lt;neon-light
+  color="#ff69b4" glow="10"
+  <strong>text-color="#00ffcc" text-animate="breath"</strong>
+  font-size="48" style="width:700px;height:120px"&gt;
+  NEON
+  &lt;svg viewBox="0 0 24 24" width="48" height="48"&gt;
+    &lt;circle cx="12" cy="12" r="10"/&gt;
+  &lt;/svg&gt;
+&lt;/neon-light&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="svg-attrs">SVG 专属属性（<code>svg-*</code> 前缀）</h2>
+
+<p>覆盖全局属性，仅作用于 SVG 形状。</p>
+
+<table>
+  <tr><th>属性</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+  <tr><td><code>svg-color</code></td><td>color</td><td>—</td><td>覆盖 <code>color</code></td></tr>
+  <tr><td><code>svg-glow</code></td><td>number</td><td>—</td><td>覆盖 <code>glow</code></td></tr>
+  <tr><td><code>svg-blur</code></td><td>number</td><td>—</td><td>覆盖 <code>blur</code></td></tr>
+  <tr><td><code>svg-animate</code></td><td>string</td><td>—</td><td>覆盖 <code>animate</code>；额外支持 <code>broken</code> 和 <code>flow</code></td></tr>
+  <tr><td><code>svg-speed</code></td><td>number</td><td>—</td><td>覆盖 <code>speed</code></td></tr>
+  <tr><td><code>svg-dashed</code></td><td>boolean</td><td>—</td><td>覆盖 <code>dashed</code></td></tr>
+  <tr><td><code>svg-stroke-width</code></td><td>number</td><td><code>10</code></td><td>SVG 形状描边宽度</td></tr>
+  <tr><td><code>svg-broken-ratio</code></td><td>number</td><td>—</td><td>覆盖 <code>broken-ratio</code></td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="cascade">配置级联规则</h2>
+
+<div class="card">
+  <p style="text-align:center;font-size:1.1em;">
+    <code>text-*</code> &nbsp;&gt;&nbsp; <code>svg-*</code> &nbsp;&gt;&nbsp; 全局属性 &nbsp;&gt;&nbsp; 默认值
+  </p>
+</div>
+
+<p>每种属性只影响对应的内容类型，互不干扰：</p>
+<ul style="margin-left:20px;">
+  <li><strong>文字</strong> → <code>text-*</code> → 全局属性 → 默认值</li>
+  <li><strong>SVG</strong> → <code>svg-*</code> → 全局属性 → 默认值</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="animations">动画预设</h2>
+
+<h3>通用动画（文字和 SVG 均可用）</h3>
+
+<table>
+  <tr><th>值</th><th>效果</th><th>时长 (speed=1)</th></tr>
+  <tr><td><code>none</code></td><td>无动画，常亮</td><td>—</td></tr>
+  <tr><td><code>flicker</code></td><td>不规则闪烁，模拟霓虹灯管</td><td>6s 循环</td></tr>
+  <tr><td><code>breath</code></td><td>平滑呼吸式明暗渐变</td><td>4s 循环</td></tr>
+  <tr><td><code>glitch</code></td><td>故障效果，伴随颜色偏移和闪烁</td><td>3s 循环</td></tr>
+</table>
+
+<pre><code>&lt;neon-light color="#ff3355" animate="glitch" speed="1.5"
+            font-size="64" style="width:600px;height:120px"&gt;
+  GLITCH
+&lt;/neon-light&gt;</code></pre>
+
+<h3 id="broken-flow">SVG 专属动画 <span class="badge badge-svg">svg-only</span></h3>
+
+<p>仅对 SVG 形状生效，通过 <code>svg-animate</code> 设置。</p>
+
+<table>
+  <tr><th>值</th><th>效果</th></tr>
+  <tr><td><code>broken</code></td><td>断管效果——部分 path 变暗并闪烁，模拟接触不良的故障灯管</td></tr>
+  <tr><td><code>flow</code></td><td>流光效果——亮点沿路径前进的滚动光效</td></tr>
+</table>
+
+<pre><code>&lt;!-- 断管效果 — 30% 的 path 闪烁 --&gt;
+&lt;neon-light color="#ffaa00" glow="14"
+            svg-animate="broken" broken-ratio="0.3"
+            svg-stroke-width="5"
+            font-size="48" style="width:700px;height:180px"&gt;
+  BEER
+  &lt;svg viewBox="0 0 1024 1024" width="72" height="72"&gt;
+    &lt;path d="..." p-id="1"/&gt;
+    &lt;path d="..." p-id="2"/&gt;
+    &lt;path d="..." p-id="3"/&gt;
+  &lt;/svg&gt;
+&lt;/neon-light&gt;
+
+&lt;!-- 流光效果 --&gt;
+&lt;neon-light color="#00ccff" glow="12"
+            svg-animate="flow" svg-stroke-width="4"
+            font-size="48" style="width:700px;height:180px"&gt;
+  BEER
+  &lt;svg viewBox="0 0 1024 1024" width="72" height="72"&gt;
+    &lt;path d="..." p-id="1"/&gt;
+  &lt;/svg&gt;
+&lt;/neon-light&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="path-config">Per-Path 配置 <span class="badge badge-new">new</span></h2>
+
+<p>针对 SVG 中特定的 <code>&lt;path&gt;</code> 单独设置颜色和破管状态，使用类似 CSS 的语法。</p>
+
+<h3>语法</h3>
+
+<div class="card">
+  <code>path-config="&lt;path-id&gt;: &lt;key&gt;:&lt;value&gt;, &lt;key&gt;:&lt;value&gt;; ..."</code>
+</div>
+
+<ul style="margin-left:20px;">
+  <li>每条规则用 <code>;</code> 分隔</li>
+  <li>每条规则内属性用 <code>,</code> 分隔</li>
+  <li>键值对用 <code>:</code> 分隔</li>
+  <li><code>&lt;path-id&gt;</code> 匹配 SVG 内元素的 <code>id</code> 或 <code>p-id</code> 属性</li>
+</ul>
+
+<h3>支持的属性</h3>
+
+<table>
+  <tr><th>属性</th><th>值</th><th>说明</th></tr>
+  <tr><td><code>color</code></td><td>CSS 颜色值</td><td>覆盖该 path 的描边颜色</td></tr>
+  <tr><td><code>broken</code></td><td><code>true</code> / <code>false</code> / <code>1</code> / <code>0</code></td><td>强制该 path 为破管或正常状态</td></tr>
+</table>
+
+<h3>破管分配逻辑</h3>
+
+<ol style="margin-left:20px;">
+  <li><code>broken:true</code> 的 path 始终为破管</li>
+  <li><code>broken:false</code> 的 path 始终为正常</li>
+  <li>未指定的 path 由全局 <code>broken-ratio</code> 决定，通过内容 hash 确定性选取</li>
+</ol>
+
+<pre><code>&lt;neon-light color="#ffaa00" glow="14"
+            svg-animate="broken" broken-ratio="0.5"
+            svg-stroke-width="5"
+            <strong>path-config="1: color:#ff4444, broken:true; 3: color:#4488ff, broken:false"</strong>
+            font-size="48" style="width:700px;height:180px"&gt;
+  PER-PATH
+  &lt;svg viewBox="0 0 1024 1024" width="72" height="72"&gt;
+    &lt;path d="..." p-id="1"/&gt;  &lt;!-- 红色，强制破管闪烁 --&gt;
+    &lt;path d="..." p-id="2"/&gt;  &lt;!-- 全局颜色，按 ratio 自动分配 --&gt;
+    &lt;path d="..." p-id="3"/&gt;  &lt;!-- 蓝色，强制正常常亮 --&gt;
+  &lt;/svg&gt;
+&lt;/neon-light&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="typography">排版属性</h2>
+
+<p>仅作用于文字内容。</p>
+
+<table>
+  <tr><th>属性</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+  <tr><td><code>font-family</code></td><td>string</td><td><code>inherit</code></td><td>字体族</td></tr>
+  <tr><td><code>font-size</code></td><td>number</td><td><code>64</code></td><td>字号（px）</td></tr>
+  <tr><td><code>font-weight</code></td><td>string</td><td><code>normal</code></td><td>字重</td></tr>
+  <tr><td><code>font-style</code></td><td>string</td><td><code>normal</code></td><td>字体样式</td></tr>
+  <tr><td><code>text-transform</code></td><td>string</td><td><code>none</code></td><td>文字变形</td></tr>
+  <tr><td><code>letter-spacing</code></td><td>number</td><td><code>0</code></td><td>字间距（px）</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="css-props">CSS 自定义属性</h2>
+
+<p>可在 <code>&lt;neon-light&gt;</code> 上通过 <code>style</code> 属性覆盖。</p>
+
+<table>
+  <tr><th>属性</th><th>默认值</th><th>说明</th></tr>
+  <tr><td><code>--neon-back-opacity</code></td><td><code>0.6</code></td><td>外发光层（back layer）整体不透明度</td></tr>
+  <tr><td><code>--neon-front-opacity</code></td><td><code>1</code></td><td>内核层（front layer）整体不透明度</td></tr>
+  <tr><td><code>--neon-color</code></td><td>由属性设定</td><td>可在 CSS 中引用当前霓虹颜色</td></tr>
+</table>
+
+<pre><code>&lt;neon-light color="#00ffcc" glow="12" font-size="64"
+            style="width:600px;height:120px;<strong>--neon-back-opacity:0.8</strong>"&gt;
+  BRIGHT GLOW
+&lt;/neon-light&gt;</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="js-api">JavaScript API</h2>
+
+<pre><code>import { NeonLight, define } from './css-neon.js';
+
+// 自动注册（默认标签名 &lt;neon-light&gt;）
+define();
+
+// 自定义标签名
+define('my-neon', NeonLight);</code></pre>
+
+<p><code>NeonLight</code> 继承自 <code>HTMLElement</code>，所有标准 DOM API 均可使用：</p>
+
+<pre><code>const el = document.querySelector('neon-light');
+el.setAttribute('color', '#ff0000');   // 自动触发重渲染
+el.setAttribute('animate', 'flicker');</code></pre>
+
+<p>属性变化会自动触发 <code>attributeChangedCallback</code> 重渲染。修改 Light DOM 内容（添加/移除文字或 SVG）也会通过 <code>MutationObserver</code> 触发重渲染。</p>
+
+<!-- ============================================================ -->
+<h2 id="compat">浏览器兼容性</h2>
+
+<p>需要以下 API，均为现代浏览器标准：</p>
+
+<table>
+  <tr><th>API</th><th>用途</th></tr>
+  <tr><td>Custom Elements v1</td><td><code>customElements.define</code></td></tr>
+  <tr><td>Shadow DOM v1</td><td><code>attachShadow({ mode: 'open' })</code></td></tr>
+  <tr><td>SVG 1.1</td><td><code>createElementNS</code>、<code>feGaussianBlur</code></td></tr>
+  <tr><td>ES Modules</td><td><code>import</code> / <code>export</code></td></tr>
+  <tr><td>ResizeObserver</td><td>元素尺寸变化检测</td></tr>
+  <tr><td>MutationObserver</td><td>Light DOM 内容变化检测</td></tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>css-neon 测试</title>
+<style>
+  body { background: #0a0a0a; margin: 0; padding: 40px; font-family: sans-serif; }
+  h2 { color: #666; margin: 32px 0 12px; font-size: 15px; }
+  .card { background: #111; border-radius: 12px; padding: 32px; margin-bottom: 24px; }
+  p.ok { color: #3fb950; }
+  p.fail { color: #ff3355; }
+</style>
+</head>
+<body>
+<h1 style="color:#ff69b4">css-neon 测试</h1>
+
+<h2>1. 组件注册</h2>
+<div class="card">
+  <p id="test-register">测试中...</p>
+</div>
+
+<h2>2. 霓虹文字渲染</h2>
+<div class="card">
+  <neon-light id="test-text" color="#ff69b4" glow="12" font-size="48" style="width:400px;height:80px">
+    TEST
+  </neon-light>
+</div>
+
+<h2>3. 动画 — flicker</h2>
+<div class="card">
+  <neon-light color="#00ffcc" glow="14" animate="flicker" font-size="48" style="width:400px;height:80px">
+    FLICKER TEST
+  </neon-light>
+</div>
+
+<h2>4. SVG 断管 + per-path 颜色</h2>
+<div class="card">
+  <neon-light id="test-broken" color="#ffaa00" glow="14"
+              svg-animate="broken" broken-ratio="0.5" svg-stroke-width="5"
+              path-config="a: color:#ff4444, broken:true; c: color:#4488ff, broken:false"
+              font-size="32" style="width:500px;height:120px">
+    SVG
+    <svg viewBox="0 0 300 100" width="80" height="80">
+      <rect id="a" x="10" y="10" width="80" height="80" rx="10"/>
+      <circle id="b" cx="150" cy="50" r="40"/>
+      <rect id="c" x="210" y="10" width="80" height="80" rx="10"/>
+    </svg>
+  </neon-light>
+</div>
+
+<h2>5. 文字 + SVG 独立配置</h2>
+<div class="card">
+  <neon-light color="#ff69b4" glow="10"
+              text-color="#00ffcc" text-animate="breath"
+              svg-color="#ff4444" svg-glow="20" svg-animate="glitch"
+              font-size="48" style="width:500px;height:100px">
+    NEON
+    <svg viewBox="0 0 24 24" width="48" height="48">
+      <circle cx="12" cy="12" r="10"/>
+    </svg>
+  </neon-light>
+</div>
+
+<script type="module">
+  import { NeonLight, define } from '../css-neon.js';
+
+  // Test 1: Registration
+  const regEl = document.getElementById('test-register');
+  const isRegistered = typeof customElements !== 'undefined' && customElements.get('neon-light');
+  regEl.innerHTML = isRegistered
+    ? '<span class="ok">✓ <neon-light> 已注册</span>'
+    : '<span class="fail">✗ 注册失败</span>';
+
+  // Test 2: Shadow DOM rendered
+  const testText = document.getElementById('test-text');
+  await new Promise(r => setTimeout(r, 200)); // wait for render
+  const hasSvg = testText.shadowRoot && testText.shadowRoot.querySelector('svg.neon-surface');
+  const result2 = document.createElement('p');
+  result2.innerHTML = hasSvg
+    ? '<span class="ok">✓ Shadow DOM 渲染成功</span>'
+    : '<span class="fail">✗ Shadow DOM 渲染失败</span>';
+  testText.parentElement.appendChild(result2);
+
+  console.log('css-neon tests complete.');
+</script>
+
+<script type="module" src="../css-neon.js"></script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Broken Neon Test</title>
+<style>
+  body { background: #0a0a0a; margin: 0; padding: 40px; font-family: sans-serif; }
+  h2 { color: #666; margin: 40px 0 16px; font-size: 16px; }
+  .card { background: #111; border-radius: 12px; padding: 32px; }
+</style>
+</head>
+<body>
+
+<h2>1. Host-level animate="broken" — circle</h2>
+<div class="card">
+  <neon-light color="#ffaa00" glow="14"
+              animate="broken" svg-stroke-width="5"
+              font-size="48" style="width:600px;height:150px">
+    TEST
+    <svg viewBox="0 0 24 24" width="48" height="48">
+      <circle cx="12" cy="12" r="10"/>
+    </svg>
+  </neon-light>
+</div>
+
+<h2>2. svg-animate="broken" — circle</h2>
+<div class="card">
+  <neon-light color="#ffaa00" glow="14"
+              svg-animate="broken" svg-stroke-width="5"
+              font-size="48" style="width:600px;height:150px">
+    TEST
+    <svg viewBox="0 0 24 24" width="48" height="48">
+      <circle cx="12" cy="12" r="10"/>
+    </svg>
+  </neon-light>
+</div>
+
+<h2>3. Host-level animate="flow" — circle</h2>
+<div class="card">
+  <neon-light color="#00ccff" glow="12"
+              animate="flow" svg-stroke-width="3"
+              font-size="48" style="width:600px;height:150px">
+    TEST
+    <svg viewBox="0 0 24 24" width="48" height="48">
+      <circle cx="12" cy="12" r="10"/>
+    </svg>
+  </neon-light>
+</div>
+
+<h2>4. svg-animate="flow" — circle</h2>
+<div class="card">
+  <neon-light color="#00ccff" glow="12"
+              svg-animate="flow" svg-stroke-width="3"
+              font-size="48" style="width:600px;height:150px">
+    TEST
+    <svg viewBox="0 0 24 24" width="48" height="48">
+      <circle cx="12" cy="12" r="10"/>
+    </svg>
+  </neon-light>
+</div>
+
+<script type="module" src="../css-neon.js"></script>
+</body>
+</html>

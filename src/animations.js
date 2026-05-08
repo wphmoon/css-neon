@@ -54,10 +54,45 @@ function generateGlitch(speed) {
   `;
 }
 
+function generateBroken(speed) {
+  const dur = (4 / speed).toFixed(2);
+  return `
+    @keyframes neon-broken-flicker {
+      0%, 100% { opacity: 0.55; }
+      18%, 33%, 68% { opacity: 0.15; }
+      25%, 51%, 82% { opacity: 0.75; }
+      43%, 91% { opacity: 0.08; }
+    }
+    @keyframes neon-broken-glow {
+      0%, 100% { opacity: 0.6; }
+      18%, 33%, 68% { opacity: 0.25; }
+      25%, 51%, 82% { opacity: 0.8; }
+      43%, 91% { opacity: 0.12; }
+    }
+    .neon-svg-broken-dim { animation: neon-broken-flicker ${dur}s infinite step-end; }
+    .neon-svg-broken-glow { animation: neon-broken-glow ${dur}s infinite 0.15s step-end; }
+  `;
+}
+
+function generateFlow(speed) {
+  const dur = (2.5 / speed).toFixed(2);
+  return `
+    @keyframes neon-flow-march {
+      0%   { stroke-dashoffset: var(--flow-total); }
+      100% { stroke-dashoffset: 0; }
+    }
+    .neon-svg-flow {
+      animation: neon-flow-march ${dur}s infinite linear;
+    }
+  `;
+}
+
 const ANIMATION_GENERATORS = {
   flicker: generateFlicker,
   breath: generateBreath,
   glitch: generateGlitch,
+  broken: generateBroken,
+  flow: generateFlow,
 };
 
 function generateAnimationStyle(animateName, speed) {
