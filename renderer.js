@@ -1,7 +1,7 @@
 import { createSvgElement } from './utils.js';
 import { resolveTextConfig, resolveSvgConfig } from './config.js';
 
-const ITEM_GAP = 16;
+const GAP = 16;
 
 function renderLightDom(el, width, height) {
   const textCfg = resolveTextConfig(el);
@@ -9,53 +9,83 @@ function renderLightDom(el, width, height) {
   const backGroup = createSvgElement('g', { class: 'neon-back' });
   const frontGroup = createSvgElement('g', { class: 'neon-front' });
 
-  // Collect items with estimated widths
-  const items = collectItems(el, textCfg);
-  const rawWidth = items.reduce((sum, it) => sum + it.width, 0) + Math.max(0, items.length - 1) * ITEM_GAP;
-  // Add 15% padding to account for stroke extension and font variance
-  const totalWidth = rawWidth * 1.15;
-  let x = Math.max(0, (width - totalWidth) / 2);
+  // Separate text and SVG items from light DOM
+  const textParts = [];
+  const svgParts = [];
+  for (const child of el.childNodes) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      const t = child.textContent;
+      if (t.trim()) textParts.push(t);
+    } else if (child.nodeType === Node.ELEMENT_NODE && child.tagName.toLowerCase() === 'svg') {
+      svgParts.push(child);
+    }
+  }
+
+  const hasText = textParts.length > 0;
+  const hasSvg = svgParts.length > 0;
+  const fullText = textParts.join('');
   const y = height * 0.62;
 
-  for (const item of items) {
-    if (item.type === 'text') {
-      appendTextLayers(backGroup, frontGroup, item.text, textCfg, x + item.width / 2, y);
-    } else if (item.type === 'svg') {
-      appendNestedSvg(backGroup, frontGroup, item.el, svgCfg, x, y);
+  if (hasText && hasSvg) {
+    // Text centered in left portion, SVGs to its right
+    // Estimate text width for positioning
+    const textW = estimateTextPx(fullText, textCfg.fontSize);
+    const svgTotalW = svgParts.reduce((s, svg) => s + (parseFloat(svg.getAttribute('width')) || 64), 0)
+      + Math.max(0, svgParts.length - 1) * GAP;
+    const totalW = textW + GAP + svgTotalW;
+    const startX = (width - totalW) / 2;
+
+    // Text at left portion
+    appendTextLayers(backGroup, frontGroup, fullText, textCfg, startX + textW / 2, y, startX);
+
+    // SVGs to the right
+    let sx = startX + textW + GAP;
+    for (const svg of svgParts) {
+      const sw = parseFloat(svg.getAttribute('width')) || 64;
+      appendNestedSvg(backGroup, frontGroup, svg, svgCfg, sx, y);
+      sx += sw + GAP;
     }
-    x += item.width + ITEM_GAP;
+  } else if (hasText) {
+    // Text only: center in SVG
+    appendTextLayers(backGroup, frontGroup, fullText, textCfg, width / 2, y, 0);
+  } else if (hasSvg) {
+    // SVG only: center all SVGs
+    const svgTotalW = svgParts.reduce((s, svg) => s + (parseFloat(svg.getAttribute('width')) || 64), 0)
+      + Math.max(0, svgParts.length - 1) * GAP;
+    let sx = (width - svgTotalW) / 2;
+    for (const svg of svgParts) {
+      const sw = parseFloat(svg.getAttribute('width')) || 64;
+      appendNestedSvg(backGroup, frontGroup, svg, svgCfg, sx, y);
+      sx += sw + GAP;
+    }
   }
 
   return { backGroup, frontGroup };
 }
 
-function collectItems(el, textCfg) {
-  const items = [];
-  for (const child of el.childNodes) {
-    if (child.nodeType === Node.TEXT_NODE) {
-      const text = child.textContent;
-      if (!text.trim()) continue;
-      const width = estimateTextWidth(text, textCfg.fontSize);
-      items.push({ type: 'text', text, width });
-    } else if (child.nodeType === Node.ELEMENT_NODE && child.tagName.toLowerCase() === 'svg') {
-      const w = parseFloat(child.getAttribute('width')) || 64;
-      items.push({ type: 'svg', el: child, width: w });
-    }
-  }
-  return items;
-}
-
-function estimateTextWidth(text, fontSize) {
-  let len = 0;
+// Rough pixel width estimate — kept generous to avoid clipping
+function estimateTextPx(text, fontSize) {
+  let n = 0;
   for (const ch of text) {
-    // CJK and fullwidth chars ~1em; Latin ~0.62em avg (wider than 0.5 to avoid clipping)
-    len += /[一-鿿　-〿＀-￯]/.test(ch) ? 1 : 0.65;
+    n += /[一-鿿　-〿＀-￯]/.test(ch) ? 1.1 : 0.7;
   }
-  return len * fontSize;
+  return Math.ceil(n * fontSize);
 }
 
-function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y) {
-  const base = buildTextAttrs(cfg, cx, y);
+function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y, /* optional for dash bleed */ _unused) {
+  const base = {
+    'font-family': cfg.fontFamily,
+    'font-size': `${cfg.fontSize}px`,
+    'font-weight': cfg.fontWeight,
+    'font-style': cfg.fontStyle,
+    'text-transform': cfg.textTransform,
+    'letter-spacing': `${cfg.letterSpacing}px`,
+    fill: cfg.color,
+    'fill-opacity': '0.4',
+    'text-anchor': 'middle',
+    x: String(cx),
+    y: String(y),
+  };
   const dash = cfg.dashed ? { 'stroke-dasharray': '180 100' } : {};
 
   const backText = createSvgElement('text', {
@@ -78,29 +108,14 @@ function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y) {
   frontGroup.appendChild(frontText);
 }
 
-function buildTextAttrs(cfg, x, y) {
-  return {
-    'font-family': cfg.fontFamily,
-    'font-size': `${cfg.fontSize}px`,
-    'font-weight': cfg.fontWeight,
-    'font-style': cfg.fontStyle,
-    'text-transform': cfg.textTransform,
-    'letter-spacing': `${cfg.letterSpacing}px`,
-    fill: cfg.color,
-    'fill-opacity': '0.4',
-    'text-anchor': 'middle',
-    x: String(x),
-    y: String(y),
-  };
-}
-
 function appendNestedSvg(backGroup, frontGroup, sourceSvg, cfg, x, y) {
   const vbox = sourceSvg.getAttribute('viewBox') || '0 0 24 24';
   const sw = parseFloat(sourceSvg.getAttribute('width')) || 64;
   const sh = parseFloat(sourceSvg.getAttribute('height')) || 64;
   const shapes = Array.from(sourceSvg.querySelectorAll('path, circle, rect, ellipse, line, polyline, polygon'));
+  const dash = cfg.dashed ? { 'stroke-dasharray': '180 100' } : {};
 
-  // Nested SVG element for back layer
+  // Back layer
   const backSvg = createSvgElement('svg', {
     x: String(x), y: String(y - sh / 2),
     width: String(sw), height: String(sh),
@@ -111,45 +126,40 @@ function appendNestedSvg(backGroup, frontGroup, sourceSvg, cfg, x, y) {
     stroke: cfg.color,
     'stroke-width': String(cfg.svgStrokeWidth),
     filter: 'url(#neon-blur)',
-    ...(cfg.dashed ? { 'stroke-dasharray': '180 100' } : {}),
+    ...dash,
   });
   for (const shape of shapes) {
-    backG.appendChild(cloneShape(shape, cfg));
+    backG.appendChild(cloneShape(shape));
   }
   backSvg.appendChild(backG);
   backGroup.appendChild(backSvg);
 
-  // Nested SVG element for front layer
+  // Front layer
   const frontSvg = createSvgElement('svg', {
     x: String(x), y: String(y - sh / 2),
     width: String(sw), height: String(sh),
     viewBox: vbox,
   });
   const frontG = createSvgElement('g', {
-    fill: shapeFill(shapes[0]),
+    fill: shapes[0] ? shapes[0].getAttribute('fill') || 'none' : 'none',
     stroke: cfg.color,
     'stroke-width': String(Math.max(2, cfg.svgStrokeWidth * 0.5)),
-    ...(cfg.dashed ? { 'stroke-dasharray': '180 100' } : {}),
+    ...dash,
   });
   for (const shape of shapes) {
-    frontG.appendChild(cloneShape(shape, cfg));
+    frontG.appendChild(cloneShape(shape));
   }
   frontSvg.appendChild(frontG);
   frontGroup.appendChild(frontSvg);
 }
 
-function cloneShape(shape, cfg) {
+function cloneShape(shape) {
   const el = createSvgElement(shape.tagName);
   for (const { name, value } of shape.attributes) {
     if (name === 'fill' || name === 'stroke') continue;
     el.setAttribute(name, value);
   }
   return el;
-}
-
-function shapeFill(shape) {
-  if (!shape) return 'none';
-  return shape.getAttribute('fill') || 'none';
 }
 
 function buildSvgSurface(hostWidth, hostHeight) {
