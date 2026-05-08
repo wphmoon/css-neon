@@ -33,13 +33,13 @@
   <h2>1. Basic text neon</h2>
   <div class="card">
     <neon-light color="#ff69b4" glow="4" blur="15" font-size="72" style="width:600px;height:120px">
-      霓虹灯效果
+      CSS-NEON
     </neon-light>
   </div>
 
   <h2>2. Animated — flicker</h2>
   <div class="card">
-    <neon-light color="#00ffcc" glow="15" animate="flicker" font-size="64" style="width:600px;height:120px">
+    <neon-light color="#00ffcc" glow="5" animate="flicker" font-size="64" style="width:600px;height:120px">
       FLICKER
     </neon-light>
   </div>
@@ -69,7 +69,7 @@
   <h2>6. Text and SVG with independent config</h2>
   <div class="card">
     <neon-light
-      color="#ff69b4" glow="10"
+      color="#ff69b4" glow="3"
       text-color="#00ffcc" text-animate="breath"
       svg-color="#ff4444" svg-glow="20" svg-animate="glitch"
       font-size="48" style="width:700px;height:120px">
@@ -114,15 +114,15 @@
   <h2>11. Per-path config — color + broken</h2>
   <div class="card">
     <neon-light id="beer-pathcfg" color="#ffaa00" glow="14"
-                svg-animate="broken" broken-ratio="0.5" svg-stroke-width="5"
-                path-config="5739: color:#ff4444, broken:true; 5741: color:#4488ff, broken:false"
-                font-size="48" style="width:700px;height:180px">
+                svg-animate="broken" broken-ratio="0.5" svg-stroke-width="155"
+                path-config="text8: color:#00ff00, broken:true; text12: color:#ee88ff, broken:false"
+                font-size="48" style="width:300px;height:100px">
     </neon-light>
   </div>
 
   <script>
     (async () => {
-      const resp = await fetch('beer.svg');
+      const resp = await fetch('css-neon.svg');
       const text = await resp.text();
       const parser = new DOMParser();
       const doc = parser.parseFromString(text, 'image/svg+xml');
@@ -131,8 +131,8 @@
       const ids = ['beer-br1', 'beer-br2', 'beer-flow', 'beer-pathcfg'];
       for (const id of ids) {
         const svg = srcSvg.cloneNode(true);
-        svg.setAttribute('width', '72');
-        svg.setAttribute('height', '72');
+        svg.setAttribute('width', '300');
+        svg.setAttribute('height', '100');
         svg.removeAttribute('xmlns:xlink');
         document.getElementById(id).appendChild(svg);
       }
