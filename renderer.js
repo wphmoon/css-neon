@@ -11,7 +11,9 @@ function renderLightDom(el, width, height) {
 
   // Collect items with estimated widths
   const items = collectItems(el, textCfg);
-  const totalWidth = items.reduce((sum, it) => sum + it.width, 0) + Math.max(0, items.length - 1) * ITEM_GAP;
+  const rawWidth = items.reduce((sum, it) => sum + it.width, 0) + Math.max(0, items.length - 1) * ITEM_GAP;
+  // Add 15% padding to account for stroke extension and font variance
+  const totalWidth = rawWidth * 1.15;
   let x = Math.max(0, (width - totalWidth) / 2);
   const y = height * 0.62;
 
@@ -46,7 +48,8 @@ function collectItems(el, textCfg) {
 function estimateTextWidth(text, fontSize) {
   let len = 0;
   for (const ch of text) {
-    len += /[一-鿿　-〿＀-￯]/.test(ch) ? 1 : 0.55;
+    // CJK and fullwidth chars ~1em; Latin ~0.62em avg (wider than 0.5 to avoid clipping)
+    len += /[一-鿿　-〿＀-￯]/.test(ch) ? 1 : 0.65;
   }
   return len * fontSize;
 }
