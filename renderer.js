@@ -42,7 +42,7 @@ function renderLightDom(el, width, height) {
     let sx = startX + textW + GAP;
     for (const svg of svgParts) {
       const sw = parseFloat(svg.getAttribute('width')) || 64;
-      appendNestedSvg(backGroup, frontGroup, svg, svgCfg, sx, y);
+      appendSvgShapes(backGroup, frontGroup, svg, svgCfg, sx, y);
       sx += sw + GAP;
     }
   } else if (hasText) {
@@ -55,7 +55,7 @@ function renderLightDom(el, width, height) {
     let sx = (width - svgTotalW) / 2;
     for (const svg of svgParts) {
       const sw = parseFloat(svg.getAttribute('width')) || 64;
-      appendNestedSvg(backGroup, frontGroup, svg, svgCfg, sx, y);
+      appendSvgShapes(backGroup, frontGroup, svg, svgCfg, sx, y);
       sx += sw + GAP;
     }
   }
@@ -108,20 +108,27 @@ function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y, /* optional f
   frontGroup.appendChild(frontText);
 }
 
-function appendNestedSvg(backGroup, frontGroup, sourceSvg, cfg, x, y) {
+function appendSvgShapes(backGroup, frontGroup, sourceSvg, cfg, x, y) {
+  const shapes = Array.from(sourceSvg.querySelectorAll('path, circle, rect, ellipse, line, polyline, polygon'));
+  if (shapes.length === 0) return;
+
+  // Compute scale so the shapes render at the inline SVG's declared size
   const vbox = sourceSvg.getAttribute('viewBox') || '0 0 24 24';
+  const vbParts = vbox.split(/\s+/).map(Number);
+  const vbW = vbParts[2] || 24;
+  const vbH = vbParts[3] || 24;
   const sw = parseFloat(sourceSvg.getAttribute('width')) || 64;
   const sh = parseFloat(sourceSvg.getAttribute('height')) || 64;
-  const shapes = Array.from(sourceSvg.querySelectorAll('path, circle, rect, ellipse, line, polyline, polygon'));
+  const sx = sw / vbW;
+  const sy = sh / vbH;
   const dash = cfg.dashed ? { 'stroke-dasharray': '180 100' } : {};
 
-  // Back layer
-  const backSvg = createSvgElement('svg', {
-    x: String(x), y: String(y - sh / 2),
-    width: String(sw), height: String(sh),
-    viewBox: vbox,
-  });
+  // Y off: center the scaled shapes vertically around the text baseline
+  const ty = y - (sh / 2);
+
+  // Back layer — blur glow
   const backG = createSvgElement('g', {
+    transform: `translate(${x}, ${ty}) scale(${sx}, ${sy})`,
     fill: 'none',
     stroke: cfg.color,
     'stroke-width': String(cfg.svgStrokeWidth),
@@ -131,17 +138,13 @@ function appendNestedSvg(backGroup, frontGroup, sourceSvg, cfg, x, y) {
   for (const shape of shapes) {
     backG.appendChild(cloneShape(shape));
   }
-  backSvg.appendChild(backG);
-  backGroup.appendChild(backSvg);
+  backGroup.appendChild(backG);
 
-  // Front layer
-  const frontSvg = createSvgElement('svg', {
-    x: String(x), y: String(y - sh / 2),
-    width: String(sw), height: String(sh),
-    viewBox: vbox,
-  });
+  // Front layer — sharp core
+  const frontFill = shapes[0] ? (shapes[0].getAttribute('fill') || 'none') : 'none';
   const frontG = createSvgElement('g', {
-    fill: shapes[0] ? shapes[0].getAttribute('fill') || 'none' : 'none',
+    transform: `translate(${x}, ${ty}) scale(${sx}, ${sy})`,
+    fill: frontFill,
     stroke: cfg.color,
     'stroke-width': String(Math.max(2, cfg.svgStrokeWidth * 0.5)),
     ...dash,
@@ -149,8 +152,7 @@ function appendNestedSvg(backGroup, frontGroup, sourceSvg, cfg, x, y) {
   for (const shape of shapes) {
     frontG.appendChild(cloneShape(shape));
   }
-  frontSvg.appendChild(frontG);
-  frontGroup.appendChild(frontSvg);
+  frontGroup.appendChild(frontG);
 }
 
 function cloneShape(shape) {
