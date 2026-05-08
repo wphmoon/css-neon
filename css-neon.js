@@ -56,6 +56,7 @@ const OBSERVED_ATTRS = [
   'svg-color', 'svg-glow', 'svg-blur', 'svg-animate', 'svg-speed', 'svg-dashed', 'svg-stroke-width', 'svg-broken-ratio',
   'broken-ratio', 'path-config',
   'font-family', 'font-size', 'font-weight', 'font-style', 'text-transform', 'letter-spacing',
+  'src', 'svg-width', 'svg-height',
 ];
 
 // Property map: 'text-color' → { target: 'text', prop: 'color' }
@@ -602,6 +603,8 @@ class NeonLight extends HTMLElement {
     this._render();
     this._startObserver();
     this._startMutationObserver();
+    const src = this.getAttribute('src');
+    if (src) this._loadSrc(src);
   }
 
   disconnectedCallback() {
@@ -616,7 +619,22 @@ class NeonLight extends HTMLElement {
   }
 
   attributeChangedCallback(name, oldVal, newVal) {
-    if (oldVal !== newVal && this._svg) {
+    if (oldVal === newVal || !this._svg) return;
+    if (name === 'src') {
+      if (newVal) {
+        this._loadSrc(newVal);
+      } else if (this._injectedSvg) {
+        this._injectedSvg.remove();
+        this._injectedSvg = null;
+        this._render();
+      }
+    } else if (name === 'svg-width' || name === 'svg-height') {
+      // Update dimensions on injected SVG and re-render
+      if (this._injectedSvg) {
+        this._injectedSvg.setAttribute(name, newVal);
+        this._render();
+      }
+    } else {
       this._render();
     }
   }
@@ -683,6 +701,39 @@ class NeonLight extends HTMLElement {
       if (this._svg) this._render();
     });
     this._mutObserver.observe(this, { childList: true });
+  }
+
+  async _loadSrc(url) {
+    if (!url) return;
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) return;
+      const text = await resp.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(text, 'image/svg+xml');
+      const srcSvg = doc.querySelector('svg');
+      if (!srcSvg) return;
+
+      // Remove previously injected SVG
+      if (this._injectedSvg) {
+        this._injectedSvg.remove();
+        this._injectedSvg = null;
+      }
+
+      this._injectedSvg = srcSvg.cloneNode(true);
+      this._injectedSvg.removeAttribute('xmlns:xlink');
+
+      // Apply dimensions: svg-width/svg-height attr > file defaults > 64
+      const hostW = this.getAttribute('svg-width') || srcSvg.getAttribute('width');
+      const hostH = this.getAttribute('svg-height') || srcSvg.getAttribute('height');
+      if (hostW) this._injectedSvg.setAttribute('width', hostW);
+      if (hostH) this._injectedSvg.setAttribute('height', hostH);
+
+      this.appendChild(this._injectedSvg);
+      // MutationObserver triggers _render()
+    } catch (_) {
+      // network error or invalid SVG — silently ignore
+    }
   }
 }
 
