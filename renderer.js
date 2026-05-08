@@ -14,8 +14,8 @@ function renderLightDom(el, width, height) {
   const svgParts = [];
   for (const child of el.childNodes) {
     if (child.nodeType === Node.TEXT_NODE) {
-      const t = child.textContent;
-      if (t.trim()) textParts.push(t);
+      const t = child.textContent.trim();
+      if (t) textParts.push(t);
     } else if (child.nodeType === Node.ELEMENT_NODE && child.tagName.toLowerCase() === 'svg') {
       svgParts.push(child);
     }
@@ -23,7 +23,7 @@ function renderLightDom(el, width, height) {
 
   const hasText = textParts.length > 0;
   const hasSvg = svgParts.length > 0;
-  const fullText = textParts.join('');
+  const fullText = textParts.join(' ');
   const y = height * 0.62;
 
   if (hasText && hasSvg) {
