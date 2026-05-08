@@ -20,6 +20,7 @@ function parseNumber(value, fallback) {
 }
 
 function parseBoolean(value) {
+  if (typeof value === 'boolean') return value;
   return value !== null && value !== undefined && value !== 'false';
 }
 

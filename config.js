@@ -1,3 +1,5 @@
+import { parseBoolean, parseNumber } from './utils.js';
+
 const DEFAULTS = {
   color: '#ff69b4',
   glow: 10,
@@ -58,18 +60,18 @@ function resolveConfig(el, contentType) {
 
   return {
     color: get('color'),
-    glow: parseFloat(get('glow')),
-    blur: parseFloat(get('blur')),
+    glow: parseNumber(get('glow'), DEFAULTS.glow),
+    blur: parseNumber(get('blur'), DEFAULTS.blur),
     animate: get('animate'),
-    speed: parseFloat(get('speed')),
-    dashed: get('dashed') !== null && get('dashed') !== 'false',
+    speed: parseNumber(get('speed'), DEFAULTS.speed),
+    dashed: parseBoolean(get('dashed')),
     fontFamily: get('fontFamily'),
-    fontSize: parseFloat(get('fontSize')),
+    fontSize: parseNumber(get('fontSize'), DEFAULTS.fontSize),
     fontWeight: get('fontWeight'),
     fontStyle: get('fontStyle'),
     textTransform: get('textTransform'),
-    letterSpacing: parseFloat(get('letterSpacing')),
-    svgStrokeWidth: parseFloat(get('svgStrokeWidth')),
+    letterSpacing: parseNumber(get('letterSpacing'), DEFAULTS.letterSpacing),
+    svgStrokeWidth: parseNumber(get('svgStrokeWidth'), DEFAULTS.svgStrokeWidth),
   };
 }
 
