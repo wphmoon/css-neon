@@ -1,4 +1,3 @@
-import { createSvgElement } from './utils.js';
 import { OBSERVED_ATTRS, resolveHostConfig } from './config.js';
 import { generateAnimationStyle } from './animations.js';
 import { renderLightDom, buildSvgSurface, buildDefs } from './renderer.js';
@@ -67,7 +66,7 @@ class NeonLight extends HTMLElement {
     this._svg.appendChild(defs);
 
     // Render light DOM content into dual layers
-    const { backGroup, frontGroup } = renderLightDom(this);
+    const { backGroup, frontGroup } = renderLightDom(this, width, height);
     this._svg.appendChild(backGroup);
     this._svg.appendChild(frontGroup);
 
@@ -80,17 +79,6 @@ class NeonLight extends HTMLElement {
     this.shadowRoot.innerHTML = '';
     this.shadowRoot.appendChild(styleEl);
     this.shadowRoot.appendChild(this._svg);
-
-    // Adjust text y-position after render
-    this._adjustTextPositions(width, height);
-  }
-
-  _adjustTextPositions(width, height) {
-    const texts = this.shadowRoot.querySelectorAll('text');
-    const y = height * 0.6;
-    for (const text of texts) {
-      text.setAttribute('y', String(y));
-    }
   }
 
   _syncCssProps(cfg) {

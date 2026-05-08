@@ -1,50 +1,78 @@
-import { SVG_NS, createSvgElement, setAttrs } from './utils.js';
+import { SVG_NS, createSvgElement } from './utils.js';
 import { resolveTextConfig, resolveSvgConfig } from './config.js';
 
-function renderLightDom(el) {
+const ITEM_GAP = 16;
+
+function renderLightDom(el, width, height) {
   const textCfg = resolveTextConfig(el);
   const svgCfg = resolveSvgConfig(el);
   const backGroup = createSvgElement('g', { class: 'neon-back' });
   const frontGroup = createSvgElement('g', { class: 'neon-front' });
 
+  // Collect items with estimated widths
+  const items = collectItems(el, textCfg);
+  const totalWidth = items.reduce((sum, it) => sum + it.width, 0) + Math.max(0, items.length - 1) * ITEM_GAP;
+  let x = Math.max(0, (width - totalWidth) / 2);
+  const y = height * 0.62;
+
+  for (const item of items) {
+    if (item.type === 'text') {
+      appendTextLayers(backGroup, frontGroup, item.text, textCfg, x + item.width / 2, y);
+    } else if (item.type === 'svg') {
+      appendNestedSvg(backGroup, frontGroup, item.el, svgCfg, x, y);
+    }
+    x += item.width + ITEM_GAP;
+  }
+
+  return { backGroup, frontGroup };
+}
+
+function collectItems(el, textCfg) {
+  const items = [];
   for (const child of el.childNodes) {
     if (child.nodeType === Node.TEXT_NODE) {
       const text = child.textContent;
       if (!text.trim()) continue;
-      appendTextLayers(backGroup, frontGroup, text, textCfg);
+      const width = estimateTextWidth(text, textCfg.fontSize);
+      items.push({ type: 'text', text, width });
     } else if (child.nodeType === Node.ELEMENT_NODE && child.tagName.toLowerCase() === 'svg') {
-      appendSvgLayers(backGroup, frontGroup, child, svgCfg);
+      const w = parseFloat(child.getAttribute('width')) || 64;
+      items.push({ type: 'svg', el: child, width: w });
     }
   }
-
-  return { backGroup, frontGroup, textCfg, svgCfg };
+  return items;
 }
 
-function appendTextLayers(backGroup, frontGroup, text, cfg) {
-  const textAttrs = buildTextAttrs(cfg);
-  // Back layer: blur + glow via filter + thick stroke
+function estimateTextWidth(text, fontSize) {
+  let len = 0;
+  for (const ch of text) {
+    len += /[一-鿿　-〿＀-￯]/.test(ch) ? 1 : 0.55;
+  }
+  return len * fontSize;
+}
+
+function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y) {
+  const base = buildTextAttrs(cfg, cx, y);
+
   const backText = createSvgElement('text', {
-    ...textAttrs,
+    ...base,
     stroke: cfg.color,
     'stroke-width': cfg.blur * 2,
     filter: 'url(#neon-blur)',
-    'text-anchor': 'middle',
   });
   backText.textContent = text;
   backGroup.appendChild(backText);
 
-  // Front layer: thin stroke, no blur
   const frontText = createSvgElement('text', {
-    ...textAttrs,
+    ...base,
     stroke: cfg.color,
     'stroke-width': 2,
-    'text-anchor': 'middle',
   });
   frontText.textContent = text;
   frontGroup.appendChild(frontText);
 }
 
-function buildTextAttrs(cfg) {
+function buildTextAttrs(cfg, x, y) {
   return {
     'font-family': cfg.fontFamily,
     'font-size': `${cfg.fontSize}px`,
@@ -54,61 +82,76 @@ function buildTextAttrs(cfg) {
     'letter-spacing': `${cfg.letterSpacing}px`,
     fill: cfg.color,
     'fill-opacity': '0.4',
+    'text-anchor': 'middle',
+    x: String(x),
+    y: String(y),
   };
 }
 
-function appendSvgLayers(backGroup, frontGroup, sourceSvg, cfg) {
-  const shapes = sourceSvg.querySelectorAll('path, circle, rect, ellipse, line, polyline, polygon');
-  for (const shape of shapes) {
-    const pathData = extractShapeAttrs(shape);
-    // Back layer
-    const backEl = createSvgElement(shape.tagName, {
-      ...pathData,
-      fill: 'none',
-      stroke: cfg.color,
-      'stroke-width': cfg.svgStrokeWidth,
-      filter: 'url(#neon-blur)',
-    });
-    if (cfg.dashed) {
-      backEl.setAttribute('stroke-dasharray', '180 100');
-    }
-    backGroup.appendChild(backEl);
+function appendNestedSvg(backGroup, frontGroup, sourceSvg, cfg, x, y) {
+  const vbox = sourceSvg.getAttribute('viewBox') || '0 0 24 24';
+  const sw = parseFloat(sourceSvg.getAttribute('width')) || 64;
+  const sh = parseFloat(sourceSvg.getAttribute('height')) || 64;
+  const shapes = Array.from(sourceSvg.querySelectorAll('path, circle, rect, ellipse, line, polyline, polygon'));
 
-    // Front layer
-    const frontEl = createSvgElement(shape.tagName, {
-      ...pathData,
-      fill: shape.getAttribute('fill') || 'none',
-      stroke: cfg.color,
-      'stroke-width': Math.max(2, cfg.svgStrokeWidth * 0.5),
-    });
-    if (cfg.dashed) {
-      frontEl.setAttribute('stroke-dasharray', '180 100');
-    }
-    frontGroup.appendChild(frontEl);
+  // Nested SVG element for back layer
+  const backSvg = createSvgElement('svg', {
+    x: String(x), y: String(y - sh / 2),
+    width: String(sw), height: String(sh),
+    viewBox: vbox,
+  });
+  const backG = createSvgElement('g', {
+    fill: 'none',
+    stroke: cfg.color,
+    'stroke-width': String(cfg.svgStrokeWidth),
+    filter: 'url(#neon-blur)',
+  });
+  for (const shape of shapes) {
+    backG.appendChild(cloneShape(shape, cfg));
   }
+  backSvg.appendChild(backG);
+  backGroup.appendChild(backSvg);
+
+  // Nested SVG element for front layer
+  const frontSvg = createSvgElement('svg', {
+    x: String(x), y: String(y - sh / 2),
+    width: String(sw), height: String(sh),
+    viewBox: vbox,
+  });
+  const frontG = createSvgElement('g', {
+    fill: shapeFill(shapes[0]),
+    stroke: cfg.color,
+    'stroke-width': String(Math.max(2, cfg.svgStrokeWidth * 0.5)),
+  });
+  for (const shape of shapes) {
+    frontG.appendChild(cloneShape(shape, cfg));
+  }
+  frontSvg.appendChild(frontG);
+  frontGroup.appendChild(frontSvg);
 }
 
-function extractShapeAttrs(shape) {
-  const attrs = {};
+function cloneShape(shape, cfg) {
+  const el = createSvgElement(shape.tagName);
   for (const { name, value } of shape.attributes) {
     if (name === 'fill' || name === 'stroke') continue;
-    attrs[name] = value;
+    el.setAttribute(name, value);
   }
-  if (shape.tagName.toLowerCase() === 'circle') {
-    attrs.d = '';
-  }
-  return attrs;
+  return el;
+}
+
+function shapeFill(shape) {
+  if (!shape) return 'none';
+  return shape.getAttribute('fill') || 'none';
 }
 
 function buildSvgSurface(hostWidth, hostHeight) {
-  const svg = createSvgElement('svg', {
+  return createSvgElement('svg', {
     class: 'neon-surface',
     width: '100%',
     height: '100%',
     viewBox: `0 0 ${hostWidth} ${hostHeight}`,
     preserveAspectRatio: 'xMidYMid meet',
   });
-  return svg;
 }
 
 function buildDefs(blurAmount) {
