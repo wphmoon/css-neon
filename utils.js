@@ -20,7 +20,7 @@ function parseNumber(value, fallback) {
 }
 
 function parseBoolean(value) {
-  return value !== null && value !== 'false';
+  return value !== null && value !== undefined && value !== 'false';
 }
 
 export { SVG_NS, createSvgElement, setAttrs, parseNumber, parseBoolean };
