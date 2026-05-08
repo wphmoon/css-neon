@@ -1,4 +1,4 @@
-import { SVG_NS, createSvgElement } from './utils.js';
+import { createSvgElement } from './utils.js';
 import { resolveTextConfig, resolveSvgConfig } from './config.js';
 
 const ITEM_GAP = 16;
@@ -53,12 +53,14 @@ function estimateTextWidth(text, fontSize) {
 
 function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y) {
   const base = buildTextAttrs(cfg, cx, y);
+  const dash = cfg.dashed ? { 'stroke-dasharray': '180 100' } : {};
 
   const backText = createSvgElement('text', {
     ...base,
     stroke: cfg.color,
     'stroke-width': cfg.blur * 2,
     filter: 'url(#neon-blur)',
+    ...dash,
   });
   backText.textContent = text;
   backGroup.appendChild(backText);
@@ -67,6 +69,7 @@ function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y) {
     ...base,
     stroke: cfg.color,
     'stroke-width': 2,
+    ...dash,
   });
   frontText.textContent = text;
   frontGroup.appendChild(frontText);
@@ -105,6 +108,7 @@ function appendNestedSvg(backGroup, frontGroup, sourceSvg, cfg, x, y) {
     stroke: cfg.color,
     'stroke-width': String(cfg.svgStrokeWidth),
     filter: 'url(#neon-blur)',
+    ...(cfg.dashed ? { 'stroke-dasharray': '180 100' } : {}),
   });
   for (const shape of shapes) {
     backG.appendChild(cloneShape(shape, cfg));
@@ -122,6 +126,7 @@ function appendNestedSvg(backGroup, frontGroup, sourceSvg, cfg, x, y) {
     fill: shapeFill(shapes[0]),
     stroke: cfg.color,
     'stroke-width': String(Math.max(2, cfg.svgStrokeWidth * 0.5)),
+    ...(cfg.dashed ? { 'stroke-dasharray': '180 100' } : {}),
   });
   for (const shape of shapes) {
     frontG.appendChild(cloneShape(shape, cfg));
