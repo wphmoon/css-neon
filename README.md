@@ -88,6 +88,45 @@ utils.js → config.js → animations.js → renderer.js → neon-light.js → i
 </neon-light>
 ```
 
+### 外部 SVG 文件（`src` 属性）
+
+通过 `src` 属性直接引用外部 SVG 文件，无需 JavaScript：
+
+```html
+<neon-light color="#00ccff" glow="12"
+            svg-animate="flow" svg-stroke-width="4"
+            src="css-neon.svg" svg-width="300" svg-height="100"
+            style="width:300px;height:100px">
+</neon-light>
+```
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `src` | URL | — | 外部 SVG 文件路径，文件加载后自动 append 到 Light DOM |
+| `svg-width` | number | 文件原始宽度 | 覆盖外部 SVG 的显示宽度 |
+| `svg-height` | number | 文件原始高度 | 覆盖外部 SVG 的显示高度 |
+
+### 字体加载与文字路径化（`font-src` 属性）
+
+通过 `font-src` 加载 TTF/OTF/WOFF 字体文件，将文字转为 SVG  glyph 路径渲染。路径化后，文字支持 SVG 专属动画（broken / flow）和 per-character 配置：
+
+```html
+<neon-light color="#ffaa00" glow="5"
+            svg-animate="broken" broken-ratio="0.3" svg-stroke-width="3"
+            font-src="fonts/Inter-Regular.ttf"
+            font-size="72" style="width:700px;height:180px">
+  CSS-NEON
+</neon-light>
+```
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `font-src` | URL | — | 字体文件路径（TTF/OTF/WOFF），字体按类级别缓存，多个实例共享 |
+
+> **注意**：`font-src` 不支持 WOFF2 格式。如需使用 WOFF2 字体，请先转换为 TTF/WOFF。
+>
+> 字体加载通过 opentype.js（动态 import `esm.sh`）解析，失败时自动回退到标准文字渲染。
+
 ---
 
 ## 属性参数
@@ -105,6 +144,11 @@ utils.js → config.js → animations.js → renderer.js → neon-light.js → i
 | `speed` | number | `1` | 动画速度倍率，越大越快 |
 | `dashed` | boolean | `false` | 是否启用虚线描边效果 |
 | `broken-ratio` | number | `0.5` | 破管比例 0–1，仅在 `svg-animate="broken"` 时生效 |
+| `src` | URL | — | 外部 SVG 文件路径 |
+| `svg-width` | number | — | SVG 显示宽度（配合 `src` 或内联 SVG） |
+| `svg-height` | number | — | SVG 显示高度（配合 `src` 或内联 SVG） |
+| `font-src` | URL | — | 字体文件路径（TTF/OTF/WOFF），加载后将文字转为路径 |
+| `path-config` | string | — | Per-path / per-char 配置字符串 |
 
 ### 文字专属属性（`text-*` 前缀）
 
@@ -179,7 +223,7 @@ text-* > svg-* > 全局属性 > 默认值
 
 ### SVG 专属动画
 
-仅对 SVG 形状生效，通过 `svg-animate` 设置。
+对 SVG 形状生效。如果通过 `font-src` 加载了字体，文字也会被转为路径，此时 broken / flow 同样对文字生效。
 
 | 值 | 效果 |
 |----|------|
@@ -187,52 +231,54 @@ text-* > svg-* > 全局属性 > 默认值
 | `flow` | 流光效果：亮点沿路径前进的滚动光效 |
 
 ```html
-<!-- 断管效果：30% 的 path 显示为故障暗管 -->
+<!-- SVG 断管效果：30% 的 path 显示为故障暗管 -->
 <neon-light color="#ffaa00" glow="14"
             svg-animate="broken" broken-ratio="0.3"
             svg-stroke-width="5"
-            font-size="48" style="width:700px;height:180px">
-  BEER
-  <svg viewBox="0 0 1024 1024" width="72" height="72">
-    <path d="..." p-id="1"/>
-    <path d="..." p-id="2"/>
-  </svg>
+            src="beer.svg" svg-width="72" svg-height="72"
+            style="width:700px;height:180px">
 </neon-light>
 
-<!-- 流光效果 -->
+<!-- SVG 流光效果 -->
 <neon-light color="#00ccff" glow="12"
             svg-animate="flow" svg-stroke-width="4"
-            font-size="48" style="width:700px;height:180px">
-  BEER
-  <svg viewBox="0 0 1024 1024" width="72" height="72">
-    <path d="..." p-id="1"/>
-  </svg>
+            src="css-neon.svg" svg-width="300" svg-height="100"
+            style="width:300px;height:100px">
+</neon-light>
+
+<!-- 文字断管效果（需配合 font-src） -->
+<neon-light color="#ffaa00" glow="5"
+            svg-animate="broken" broken-ratio="0.3" svg-stroke-width="3"
+            font-src="fonts/Inter-Regular.ttf"
+            font-size="72" style="width:700px;height:180px">
+  CSS-NEON
 </neon-light>
 ```
 
 ---
 
-## Per-Path 配置（`path-config`）
+## Per-Path / Per-Char 配置（`path-config`）
 
-可以针对 SVG 中特定的 `<path>` 单独设置颜色和破管状态，使用类似 CSS 的语法。
+可以对 SVG 中特定的 `<path>` 或文字路径化后的每个字符单独设置颜色和破管状态。
 
 ### 语法
 
 ```
-path-config="<path-id>: <key>:<value>, <key>:<value>; <path-id>: ..."
+path-config="<id>: <key>:<value>, <key>:<value>; <id>: ..."
 ```
 
 - 每条规则用 `;` 分隔
 - 每条规则内属性用 `,` 分隔
 - 键值对用 `:` 分隔
-- `<path-id>` 匹配 SVG 内元素的 `id` 或 `p-id` 属性
+- **SVG 路径**：`<id>` 匹配元素 `id` 或 `p-id` 属性
+- **文字字符**（需 `font-src`）：`<id>` 为字符索引（0-based），如 `0` 代表第一个字符
 
 ### 支持的属性
 
 | 属性 | 值 | 说明 |
 |------|-----|------|
-| `color` | CSS 颜色值 | 覆盖该 path 的描边颜色 |
-| `broken` | `true` / `false` / `1` / `0` | 强制该 path 为破管或正常状态 |
+| `color` | CSS 颜色值 | 覆盖该 path/字符 的描边颜色 |
+| `broken` | `true` / `false` / `1` / `0` | 强制该 path/字符 为破管或正常状态 |
 
 ### 破管分配逻辑
 
@@ -243,17 +289,22 @@ path-config="<path-id>: <key>:<value>, <key>:<value>; <path-id>: ..."
 ### 示例
 
 ```html
+<!-- SVG per-path：精确控制每个 path 的颜色和破管状态 -->
 <neon-light color="#ffaa00" glow="14"
             svg-animate="broken" broken-ratio="0.5"
             svg-stroke-width="5"
-            path-config="1: color:#ff4444, broken:true; 3: color:#4488ff, broken:false"
-            font-size="48" style="width:700px;height:180px">
-  PER-PATH
-  <svg viewBox="0 0 1024 1024" width="72" height="72">
-    <path d="..." p-id="1"/>  <!-- 红色，强制破管闪烁 -->
-    <path d="..." p-id="2"/>  <!-- 全局颜色，按 ratio 自动分配 -->
-    <path d="..." p-id="3"/>  <!-- 蓝色，强制正常常亮 -->
-  </svg>
+            path-config="5739: color:#ff4444, broken:true; 5741: color:#4488ff, broken:false"
+            src="beer.svg" svg-width="72" svg-height="72"
+            style="width:700px;height:180px">
+</neon-light>
+
+<!-- 文字 per-char（需 font-src）：控制每个字符的颜色和破管状态 -->
+<neon-light color="#ffaa00" glow="5"
+            svg-animate="broken" broken-ratio="0.5" svg-stroke-width="3"
+            font-src="fonts/Inter-Regular.ttf"
+            path-config="0: color:#ff4444, broken:true; 3: color:#44ff88; 5: color:#4488ff, broken:true"
+            font-size="72" style="width:700px;height:180px">
+  CSS-NEON
 </neon-light>
 ```
 

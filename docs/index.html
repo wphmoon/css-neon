@@ -111,13 +111,15 @@
   <a href="#quickstart">快速开始</a>
   <a href="#build">从源码构建</a>
   <a href="#light-dom">Light DOM 内容</a>
+  <a href="#src-attr">外部 SVG 文件</a>
+  <a href="#font-src">字体加载</a>
   <a href="#global-attrs">全局属性</a>
   <a href="#text-attrs">文字专属属性</a>
   <a href="#svg-attrs">SVG 专属属性</a>
   <a href="#cascade">配置级联规则</a>
   <a href="#animations">动画预设</a>
   <a href="#broken-flow">SVG 断管 &amp; 流光</a>
-  <a href="#path-config">Per-Path 配置</a>
+  <a href="#path-config">Per-Path / Per-Char 配置</a>
   <a href="#typography">排版属性</a>
   <a href="#css-props">CSS 自定义属性</a>
   <a href="#js-api">JavaScript API</a>
@@ -202,6 +204,52 @@
 &lt;/neon-light&gt;</code></pre>
 
 <!-- ============================================================ -->
+<h2 id="src-attr">外部 SVG 文件（<code>src</code> 属性）</h2>
+
+<p>通过 <code>src</code> 属性直接引用外部 SVG 文件，无需 JavaScript。文件加载后自动 append 到 Light DOM，触发重渲染。</p>
+
+<pre><code>&lt;neon-light color="#00ccff" glow="12"
+            svg-animate="flow" svg-stroke-width="4"
+            <strong>src="css-neon.svg" svg-width="300" svg-height="100"</strong>
+            style="width:300px;height:100px"&gt;
+&lt;/neon-light&gt;</code></pre>
+
+<table>
+  <tr><th>属性</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+  <tr><td><code>src</code></td><td>URL</td><td>—</td><td>外部 SVG 文件路径</td></tr>
+  <tr><td><code>svg-width</code></td><td>number</td><td>文件原始宽度</td><td>覆盖外部 SVG 的显示宽度</td></tr>
+  <tr><td><code>svg-height</code></td><td>number</td><td>文件原始高度</td><td>覆盖外部 SVG 的显示高度</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="font-src">字体加载与文字路径化（<code>font-src</code> 属性） <span class="badge badge-new">new</span></h2>
+
+<p>通过 <code>font-src</code> 加载 TTF/OTF/WOFF 字体文件（使用 opentype.js），将文字转为精确的 SVG glyph 路径渲染。</p>
+
+<p>路径化后的文字具备以下能力：</p>
+<ul style="margin-left:20px;">
+  <li><strong>SVG 专属动画</strong>：<code>broken</code>（断管）和 <code>flow</code>（流光）直接作用于文字</li>
+  <li><strong>Per-char 配置</strong>：通过 <code>path-config</code> 给每个字符单独设置颜色或破管状态</li>
+  <li><strong>精确字形</strong>：使用字体原始 glyph 轮廓，不依赖浏览器字体引擎</li>
+</ul>
+
+<pre><code>&lt;neon-light color="#ffaa00" glow="5"
+            svg-animate="broken" broken-ratio="0.3" svg-stroke-width="3"
+            <strong>font-src="fonts/Inter-Regular.ttf"</strong>
+            font-size="72" style="width:700px;height:180px"&gt;
+  CSS-NEON
+&lt;/neon-light&gt;</code></pre>
+
+<table>
+  <tr><th>属性</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+  <tr><td><code>font-src</code></td><td>URL</td><td>—</td><td>字体文件路径（TTF/OTF/WOFF）</td></tr>
+</table>
+
+<div class="note">
+  <strong>字体格式：</strong><code>font-src</code> 不支持 WOFF2 格式。如需使用 WOFF2 字体，请先转换为 TTF 或 WOFF。字体通过 opentype.js（动态 import <code>esm.sh</code>）解析，<strong>按类级别缓存</strong>——多个 <code>&lt;neon-light&gt;</code> 实例共享同一字体文件只需加载一次。加载失败时自动回退到标准文字渲染。
+</div>
+
+<!-- ============================================================ -->
 <h2 id="global-attrs">全局属性</h2>
 
 <p>同时作用于文字和 SVG（可被 <code>text-*</code> / <code>svg-*</code> 前缀属性覆盖）。</p>
@@ -215,6 +263,11 @@
   <tr><td><code>speed</code></td><td>number</td><td><code>1</code></td><td>动画速度倍率，越大越快</td></tr>
   <tr><td><code>dashed</code></td><td>boolean</td><td><code>false</code></td><td>是否启用虚线描边</td></tr>
   <tr><td><code>broken-ratio</code></td><td>number</td><td><code>0.5</code></td><td>破管比例 0–1<br>仅在 <code>svg-animate="broken"</code> 时生效</td></tr>
+  <tr><td><code>src</code></td><td>URL</td><td>—</td><td>外部 SVG 文件路径</td></tr>
+  <tr><td><code>svg-width</code></td><td>number</td><td>—</td><td>SVG 显示宽度（配合 <code>src</code> 或内联 SVG）</td></tr>
+  <tr><td><code>svg-height</code></td><td>number</td><td>—</td><td>SVG 显示高度（配合 <code>src</code> 或内联 SVG）</td></tr>
+  <tr><td><code>font-src</code></td><td>URL</td><td>—</td><td>字体文件路径（TTF/OTF/WOFF），加载后将文字转为 glyph 路径</td></tr>
+  <tr><td><code>path-config</code></td><td>string</td><td>—</td><td>Per-path / per-char 颜色和破管配置</td></tr>
 </table>
 
 <!-- ============================================================ -->
@@ -294,82 +347,86 @@
 
 <h3 id="broken-flow">SVG 专属动画 <span class="badge badge-svg">svg-only</span></h3>
 
-<p>仅对 SVG 形状生效，通过 <code>svg-animate</code> 设置。</p>
+<p>对 SVG 形状生效。如果通过 <code>font-src</code> 加载了字体，文字也会被转为路径，此时 broken / flow 同样对文字生效。</p>
 
 <table>
   <tr><th>值</th><th>效果</th></tr>
-  <tr><td><code>broken</code></td><td>断管效果——部分 path 变暗并闪烁，模拟接触不良的故障灯管</td></tr>
+  <tr><td><code>broken</code></td><td>断管效果——部分 path / 字符变暗并闪烁，模拟接触不良的故障灯管</td></tr>
   <tr><td><code>flow</code></td><td>流光效果——亮点沿路径前进的滚动光效</td></tr>
 </table>
 
-<pre><code>&lt;!-- 断管效果 — 30% 的 path 闪烁 --&gt;
+<pre><code>&lt;!-- SVG 断管效果 — 30% 的 path 闪烁 --&gt;
 &lt;neon-light color="#ffaa00" glow="14"
             svg-animate="broken" broken-ratio="0.3"
             svg-stroke-width="5"
-            font-size="48" style="width:700px;height:180px"&gt;
-  BEER
-  &lt;svg viewBox="0 0 1024 1024" width="72" height="72"&gt;
-    &lt;path d="..." p-id="1"/&gt;
-    &lt;path d="..." p-id="2"/&gt;
-    &lt;path d="..." p-id="3"/&gt;
-  &lt;/svg&gt;
+            <strong>src="beer.svg" svg-width="72" svg-height="72"</strong>
+            style="width:700px;height:180px"&gt;
 &lt;/neon-light&gt;
 
-&lt;!-- 流光效果 --&gt;
+&lt;!-- SVG 流光效果 --&gt;
 &lt;neon-light color="#00ccff" glow="12"
             svg-animate="flow" svg-stroke-width="4"
-            font-size="48" style="width:700px;height:180px"&gt;
-  BEER
-  &lt;svg viewBox="0 0 1024 1024" width="72" height="72"&gt;
-    &lt;path d="..." p-id="1"/&gt;
-  &lt;/svg&gt;
+            <strong>src="css-neon.svg" svg-width="300" svg-height="100"</strong>
+            style="width:300px;height:100px"&gt;
+&lt;/neon-light&gt;
+
+&lt;!-- 文字断管效果 — 需配合 font-src --&gt;
+&lt;neon-light color="#ffaa00" glow="5"
+            svg-animate="broken" broken-ratio="0.3" svg-stroke-width="3"
+            <strong>font-src="fonts/Inter-Regular.ttf"</strong>
+            font-size="72" style="width:700px;height:180px"&gt;
+  CSS-NEON
 &lt;/neon-light&gt;</code></pre>
 
 <!-- ============================================================ -->
-<h2 id="path-config">Per-Path 配置 <span class="badge badge-new">new</span></h2>
+<h2 id="path-config">Per-Path / Per-Char 配置 <span class="badge badge-new">new</span></h2>
 
-<p>针对 SVG 中特定的 <code>&lt;path&gt;</code> 单独设置颜色和破管状态，使用类似 CSS 的语法。</p>
+<p>可以对 SVG 中特定的 <code>&lt;path&gt;</code> 或文字路径化后的每个字符单独设置颜色和破管状态。</p>
 
 <h3>语法</h3>
 
 <div class="card">
-  <code>path-config="&lt;path-id&gt;: &lt;key&gt;:&lt;value&gt;, &lt;key&gt;:&lt;value&gt;; ..."</code>
+  <code>path-config="&lt;id&gt;: &lt;key&gt;:&lt;value&gt;, &lt;key&gt;:&lt;value&gt;; ..."</code>
 </div>
 
 <ul style="margin-left:20px;">
-  <li>每条规则用 <code>;</code> 分隔</li>
-  <li>每条规则内属性用 <code>,</code> 分隔</li>
-  <li>键值对用 <code>:</code> 分隔</li>
-  <li><code>&lt;path-id&gt;</code> 匹配 SVG 内元素的 <code>id</code> 或 <code>p-id</code> 属性</li>
+  <li>每条规则用 <code>;</code> 分隔，每条规则内属性用 <code>,</code> 分隔，键值对用 <code>:</code> 分隔</li>
+  <li><strong>SVG 路径</strong>：<code>&lt;id&gt;</code> 匹配元素 <code>id</code> 或 <code>p-id</code> 属性</li>
+  <li><strong>文字字符</strong>（需 <code>font-src</code>）：<code>&lt;id&gt;</code> 为字符索引（0-based），如 <code>0</code> 代表第一个字符</li>
 </ul>
 
 <h3>支持的属性</h3>
 
 <table>
   <tr><th>属性</th><th>值</th><th>说明</th></tr>
-  <tr><td><code>color</code></td><td>CSS 颜色值</td><td>覆盖该 path 的描边颜色</td></tr>
-  <tr><td><code>broken</code></td><td><code>true</code> / <code>false</code> / <code>1</code> / <code>0</code></td><td>强制该 path 为破管或正常状态</td></tr>
+  <tr><td><code>color</code></td><td>CSS 颜色值</td><td>覆盖该 path / 字符的描边颜色</td></tr>
+  <tr><td><code>broken</code></td><td><code>true</code> / <code>false</code> / <code>1</code> / <code>0</code></td><td>强制该 path / 字符为破管或正常状态</td></tr>
 </table>
 
 <h3>破管分配逻辑</h3>
 
 <ol style="margin-left:20px;">
-  <li><code>broken:true</code> 的 path 始终为破管</li>
-  <li><code>broken:false</code> 的 path 始终为正常</li>
-  <li>未指定的 path 由全局 <code>broken-ratio</code> 决定，通过内容 hash 确定性选取</li>
+  <li><code>broken:true</code> 的 path / 字符始终为破管</li>
+  <li><code>broken:false</code> 的 path / 字符始终为正常</li>
+  <li>未指定的 path / 字符由全局 <code>broken-ratio</code> 决定，通过内容 hash 确定性选取</li>
 </ol>
 
-<pre><code>&lt;neon-light color="#ffaa00" glow="14"
+<pre><code>&lt;!-- SVG per-path：精确控制每个 path 的颜色和破管状态 --&gt;
+&lt;neon-light color="#ffaa00" glow="14"
             svg-animate="broken" broken-ratio="0.5"
             svg-stroke-width="5"
-            <strong>path-config="1: color:#ff4444, broken:true; 3: color:#4488ff, broken:false"</strong>
-            font-size="48" style="width:700px;height:180px"&gt;
-  PER-PATH
-  &lt;svg viewBox="0 0 1024 1024" width="72" height="72"&gt;
-    &lt;path d="..." p-id="1"/&gt;  &lt;!-- 红色，强制破管闪烁 --&gt;
-    &lt;path d="..." p-id="2"/&gt;  &lt;!-- 全局颜色，按 ratio 自动分配 --&gt;
-    &lt;path d="..." p-id="3"/&gt;  &lt;!-- 蓝色，强制正常常亮 --&gt;
-  &lt;/svg&gt;
+            <strong>path-config="5739: color:#ff4444, broken:true; 5741: color:#4488ff, broken:false"</strong>
+            src="beer.svg" svg-width="72" svg-height="72"
+            style="width:700px;height:180px"&gt;
+&lt;/neon-light&gt;
+
+&lt;!-- 文字 per-char（需 font-src）：控制每个字符的颜色和破管状态 --&gt;
+&lt;neon-light color="#ffaa00" glow="5"
+            svg-animate="broken" broken-ratio="0.5" svg-stroke-width="3"
+            font-src="fonts/Inter-Regular.ttf"
+            <strong>path-config="0: color:#ff4444, broken:true; 3: color:#44ff88; 5: color:#4488ff, broken:true"</strong>
+            font-size="72" style="width:700px;height:180px"&gt;
+  CSS-NEON
 &lt;/neon-light&gt;</code></pre>
 
 <!-- ============================================================ -->
