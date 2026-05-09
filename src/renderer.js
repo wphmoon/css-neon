@@ -3,7 +3,7 @@ import { resolveTextConfig, resolveSvgConfig } from './config.js';
 
 const GAP = 16;
 
-function renderLightDom(el, width, height) {
+function renderLightDom(el, width, height, font) {
   const textCfg = resolveTextConfig(el);
   const svgCfg = resolveSvgConfig(el);
   const backGroup = createSvgElement('g', { class: 'neon-back' });
@@ -26,19 +26,40 @@ function renderLightDom(el, width, height) {
   const fullText = textParts.join(' ');
   const y = height * 0.62;
 
+  // When font is available, render text as paths directly with text-like styling
+  if (font && hasText) {
+    if (hasSvg) {
+      const textW = calcTextWidthPx(fullText, textCfg.fontSize, font);
+      const svgTotalW = svgParts.reduce((s, svg) => s + (parseFloat(svg.getAttribute('width')) || 64), 0)
+        + Math.max(0, svgParts.length - 1) * GAP;
+      const totalW = textW + GAP + svgTotalW;
+      const startX = (width - totalW) / 2;
+      renderTextAsPaths(backGroup, frontGroup, fullText, textCfg, svgCfg,
+                        startX + textW / 2, y, el, font);
+      let sx = startX + textW + GAP;
+      for (const svg of svgParts) {
+        const sw = parseFloat(svg.getAttribute('width')) || 64;
+        appendSvgShapes(backGroup, frontGroup, svg, svgCfg, sx, y);
+        sx += sw + GAP;
+      }
+    } else {
+      renderTextAsPaths(backGroup, frontGroup, fullText, textCfg, svgCfg,
+                        width / 2, y, el, font);
+    }
+    return { backGroup, frontGroup };
+  }
+
+  // No font — standard text + SVG rendering
   if (hasText && hasSvg) {
     // Text centered in left portion, SVGs to its right
-    // Estimate text width for positioning
     const textW = estimateTextPx(fullText, textCfg.fontSize);
     const svgTotalW = svgParts.reduce((s, svg) => s + (parseFloat(svg.getAttribute('width')) || 64), 0)
       + Math.max(0, svgParts.length - 1) * GAP;
     const totalW = textW + GAP + svgTotalW;
     const startX = (width - totalW) / 2;
 
-    // Text at left portion
     appendTextLayers(backGroup, frontGroup, fullText, textCfg, startX + textW / 2, y, startX);
 
-    // SVGs to the right
     let sx = startX + textW + GAP;
     for (const svg of svgParts) {
       const sw = parseFloat(svg.getAttribute('width')) || 64;
@@ -46,7 +67,6 @@ function renderLightDom(el, width, height) {
       sx += sw + GAP;
     }
   } else if (hasText) {
-    // Text only: center in SVG
     appendTextLayers(backGroup, frontGroup, fullText, textCfg, width / 2, y, 0);
   } else if (hasSvg) {
     // SVG only: center all SVGs
@@ -70,6 +90,132 @@ function estimateTextPx(text, fontSize) {
     n += /[一-鿿　-〿＀-￯]/.test(ch) ? 1.1 : 0.7;
   }
   return Math.ceil(n * fontSize);
+}
+
+// Exact pixel width using opentype.js font metrics
+function calcTextWidthPx(text, fontSize, font) {
+  const scale = fontSize / font.unitsPerEm;
+  let w = 0;
+  for (const ch of text) {
+    w += (font.charToGlyph(ch).advanceWidth || 0) * scale;
+  }
+  return w;
+}
+
+// Render text as glyph paths directly into back/front groups, with text-like
+// styling (front stroke=2, fill-opacity=0.4). Supports svg-animate broken/flow
+// and per-path config by reusing classifyShapes/parsePathConfig.
+function renderTextAsPaths(backGroup, frontGroup, text, textCfg, svgCfg, cx, y, host, font) {
+  const scale = textCfg.fontSize / font.unitsPerEm;
+
+  let totalWidth = 0;
+  const charData = [];
+  for (const ch of text) {
+    const glyph = font.charToGlyph(ch);
+    const advance = (glyph.advanceWidth || 0) * scale;
+    charData.push({ glyph, advance });
+    totalWidth += advance;
+  }
+  if (charData.length === 0) return;
+
+  const startX = cx - totalWidth / 2;
+
+  const paths = [];
+  let curX = startX;
+  for (let i = 0; i < charData.length; i++) {
+    const { glyph, advance } = charData[i];
+    const gPath = glyph.getPath(curX, y, textCfg.fontSize);
+    const d = gPath.toPathData(2);
+    if (d) {
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      el.setAttribute('d', d);
+      el.setAttribute('p-id', String(i));
+      paths.push(el);
+    }
+    curX += advance;
+  }
+  if (paths.length === 0) return;
+
+  const dash = textCfg.dashed ? { 'stroke-dasharray': '180 100' } : {};
+
+  if (svgCfg.animate === 'broken') {
+    const pathCfg = parsePathConfig(host.getAttribute('path-config'));
+    const ratio = getBrokenRatio(host, svgCfg);
+    const { normalShapes, brokenShapes } = classifyShapes(paths, pathCfg, ratio);
+
+    if (normalShapes.length > 0) {
+      addTextPathLayers(backGroup, normalShapes, textCfg, true, dash, false);
+      addTextPathLayers(frontGroup, normalShapes, textCfg, false, dash, false);
+    }
+    if (brokenShapes.length > 0) {
+      addTextPathLayers(backGroup, brokenShapes, textCfg, true, { ...dash, class: 'neon-svg-broken-glow' }, true);
+      addTextPathLayers(frontGroup, brokenShapes, textCfg, false, { ...dash, class: 'neon-svg-broken-dim' }, true);
+    }
+    return;
+  }
+
+  if (svgCfg.animate === 'flow') {
+    addTextPathLayers(backGroup, paths, textCfg, true, dash, false);
+    addTextPathLayers(frontGroup, paths, textCfg, false, { ...dash, style: 'opacity:0.3' }, false);
+    appendTextFlowLayers(frontGroup, paths, textCfg, svgCfg);
+    return;
+  }
+
+  // No SVG animation — simple back/front layers
+  addTextPathLayers(backGroup, paths, textCfg, true, dash, false);
+  addTextPathLayers(frontGroup, paths, textCfg, false, dash, false);
+}
+
+// Render a set of text paths into one parent group, grouped by per-path color.
+// forceNoneFill: true for broken shapes (fill:none), false for normal.
+function addTextPathLayers(parent, shapes, cfg, isBack, extraAttrs, forceNoneFill) {
+  const groups = new Map();
+  for (const shape of shapes) {
+    const c = shape._effColor || cfg.color;
+    if (!groups.has(c)) groups.set(c, []);
+    groups.get(c).push(shape);
+  }
+  for (const [color, groupShapes] of groups) {
+    const attrs = {
+      stroke: color,
+      'stroke-width': String(isBack ? cfg.glow : 2),
+      ...(extraAttrs || {}),
+    };
+    if (forceNoneFill) {
+      attrs.fill = 'none';
+    } else {
+      attrs.fill = color;
+      attrs['fill-opacity'] = '0.4';
+    }
+    if (isBack) {
+      attrs.filter = 'url(#neon-blur)';
+    }
+    const g = createSvgElement('g', attrs);
+    for (const p of groupShapes) g.appendChild(cloneShape(p));
+    parent.appendChild(g);
+  }
+}
+
+// Flow animation for text paths (compact version of appendFlowLayers)
+function appendTextFlowLayers(frontGroup, paths, cfg, svgCfg) {
+  const dashBase = cfg.fontSize * 2;
+  const flowDash = dashBase * 0.15;
+  const flowGap = dashBase * 3;
+  const flowTotal = flowDash + flowGap;
+  const dashFlow = { 'stroke-dasharray': `${flowDash} ${flowGap}` };
+  const speeds = ['0s', `-${(0.8 / svgCfg.speed).toFixed(2)}s`, `-${(1.6 / svgCfg.speed).toFixed(2)}s`];
+  for (const layer of [{ op: 1, d: speeds[0] }, { op: 0.55, d: speeds[1] }, { op: 0.25, d: speeds[2] }]) {
+    const g = createSvgElement('g', {
+      fill: 'none',
+      stroke: cfg.color,
+      'stroke-width': String(Math.max(1, svgCfg.svgStrokeWidth)),
+      class: 'neon-svg-flow',
+      style: `--flow-total:${flowTotal};opacity:${layer.op};animation-delay:${layer.d}`,
+      ...dashFlow,
+    });
+    for (const p of paths) g.appendChild(cloneShape(p));
+    frontGroup.appendChild(g);
+  }
 }
 
 function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y, /* optional for dash bleed */ _unused) {

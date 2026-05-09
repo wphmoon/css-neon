@@ -25,6 +25,7 @@ const OBSERVED_ATTRS = [
   'broken-ratio', 'path-config',
   'font-family', 'font-size', 'font-weight', 'font-style', 'text-transform', 'letter-spacing',
   'src', 'svg-width', 'svg-height',
+  'font-src',
 ];
 
 // Property map: 'text-color' → { target: 'text', prop: 'color' }

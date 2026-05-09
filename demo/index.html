@@ -124,6 +124,27 @@
     </neon-light>
   </div>
 
+  <h2>12. Font-Src + Broken — text as paths with broken effect</h2>
+  <div class="card">
+    <neon-light color="#ffaa00" glow="5"
+                svg-animate="broken" broken-ratio="0.3" svg-stroke-width="3"
+                font-src="fonts/Inter-Regular.ttf"
+                font-size="72" style="width:700px;height:180px">
+      CSS-NEON
+    </neon-light>
+  </div>
+
+  <h2>13. Font-Src + Per-Char Config — color + broken per character</h2>
+  <div class="card">
+    <neon-light color="#ffaa00" glow="5"
+                svg-animate="broken" broken-ratio="0.5" svg-stroke-width="3"
+                font-src="fonts/Inter-Regular.ttf"
+                path-config="0: color:#ff4444, broken:true; 3: color:#44ff88; 5: color:#4488ff, broken:true"
+                font-size="72" style="width:700px;height:180px">
+      CSS-NEON
+    </neon-light>
+  </div>
+
   <script type="module" src="../css-neon.js"></script>
 </body>
 </html>

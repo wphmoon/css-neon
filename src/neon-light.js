@@ -32,6 +32,7 @@ class NeonLight extends HTMLElement {
     this._observer = null;
     this._mutObserver = null;
     this._svg = null;
+    this._font = null;
   }
 
   connectedCallback() {
@@ -40,6 +41,8 @@ class NeonLight extends HTMLElement {
     this._startMutationObserver();
     const src = this.getAttribute('src');
     if (src) this._loadSrc(src);
+    const fontSrc = this.getAttribute('font-src');
+    if (fontSrc) this._loadFont(fontSrc);
   }
 
   disconnectedCallback() {
@@ -69,6 +72,13 @@ class NeonLight extends HTMLElement {
         this._injectedSvg.setAttribute(name, newVal);
         this._render();
       }
+    } else if (name === 'font-src') {
+      if (newVal) {
+        this._loadFont(newVal);
+      } else {
+        this._font = null;
+        this._render();
+      }
     } else {
       this._render();
     }
@@ -89,7 +99,7 @@ class NeonLight extends HTMLElement {
     this._svg.appendChild(defs);
 
     // Render light DOM content into dual layers
-    const { backGroup, frontGroup } = renderLightDom(this, width, height);
+    const { backGroup, frontGroup } = renderLightDom(this, width, height, this._font);
     this._svg.appendChild(backGroup);
     this._svg.appendChild(frontGroup);
 
@@ -136,6 +146,29 @@ class NeonLight extends HTMLElement {
       if (this._svg) this._render();
     });
     this._mutObserver.observe(this, { childList: true });
+  }
+
+  async _loadFont(url) {
+    if (!url) return;
+    const { constructor: C } = this;
+    if (!C._fontCache) C._fontCache = new Map();
+    if (C._fontCache.has(url)) {
+      this._font = C._fontCache.get(url);
+      this._render();
+      return;
+    }
+    try {
+      const mod = await import('https://esm.sh/opentype.js@1.3.4');
+      const opentype = mod.default || mod;
+      const resp = await fetch(url);
+      const buffer = await resp.arrayBuffer();
+      const font = opentype.parse(buffer);
+      C._fontCache.set(url, font);
+      this._font = font;
+      this._render();
+    } catch (_) {
+      // network error or invalid font — keep text fallback
+    }
   }
 
   async _loadSrc(url) {
