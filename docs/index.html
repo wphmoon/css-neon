@@ -123,6 +123,7 @@
   <a href="#typography">排版属性</a>
   <a href="#css-props">CSS 自定义属性</a>
   <a href="#js-api">JavaScript API</a>
+  <a href="#react">在 React 中使用</a>
   <a href="#compat">浏览器兼容性</a>
 </div>
 
@@ -479,6 +480,89 @@ el.setAttribute('color', '#ff0000');   // 自动触发重渲染
 el.setAttribute('animate', 'flicker');</code></pre>
 
 <p>属性变化会自动触发 <code>attributeChangedCallback</code> 重渲染。修改 Light DOM 内容（添加/移除文字或 SVG）也会通过 <code>MutationObserver</code> 触发重渲染。</p>
+
+<!-- ============================================================ -->
+<h2 id="react">在 React 中使用</h2>
+
+<p><code>css-neon</code> 是纯 Web Component，不依赖任何框架。在 React 项目中可以直接引入使用。</p>
+
+<h3>引入方式</h3>
+
+<p>把 <code>css-neon.js</code> 放入 <code>src/</code> 目录，在入口文件或组件中 import（推荐）：</p>
+
+<pre><code>// src/index.js 或 src/App.jsx
+import './css-neon.js';  // 副效应导入，自动注册 &lt;neon-light&gt; 标签</code></pre>
+
+<h3>JSX 中使用</h3>
+
+<p>引入后在 JSX 中直接当 HTML 标签使用即可：</p>
+
+<pre><code>function App() {
+  return (
+    &lt;neon-light color="#ff69b4" glow={12} font-size={64}
+                style={{ width: 600, height: 120 }}&gt;
+      CSS-NEON
+    &lt;/neon-light&gt;
+  );
+}</code></pre>
+
+<h3>style 属性的写法 <span class="badge badge-new">重要</span></h3>
+
+<p>React 的 <code>style</code> 属性<strong>只接受对象，不接受字符串</strong>。这是 React 的设计决定，对自定义元素同样适用。</p>
+
+<div class="card">
+  <table>
+    <tr><th>✅ React / JSX 正确写法</th><th>❌ 错误写法（会报错）</th></tr>
+    <tr>
+      <td><code>style={{ width: 600, height: 120 }}</code></td>
+      <td><code>style="width:600px;height:120px"</code></td>
+    </tr>
+  </table>
+</div>
+
+<p>如果写成字符串，React 会抛出以下错误：</p>
+
+<pre><code>The `style` prop expects a mapping from style properties to values,
+not a string. For example, style={{marginRight: spacing + 'em'}}
+when using JSX.</code></pre>
+
+<div class="note">
+  <strong>提示：</strong>数字类型的 style 值默认以 <code>px</code> 为单位，所以 <code>{ width: 600 }</code> 等价于 CSS 的 <code>width: 600px</code>。如需其他单位，请使用字符串 <code>{ width: '100%' }</code>。
+</div>
+
+<h3>TypeScript 类型声明</h3>
+
+<p>如果项目使用 TypeScript，在 <code>.d.ts</code> 文件中添加以下声明以消除类型错误：</p>
+
+<pre><code>declare namespace JSX {
+  interface IntrinsicElements {
+    'neon-light': React.DetailedHTMLProps&lt;
+      React.HTMLAttributes&lt;HTMLElement&gt;,
+      HTMLElement
+    &gt;;
+  }
+}</code></pre>
+
+<h3>动态修改属性</h3>
+
+<p>React 的虚拟 DOM 不会自动将 prop 同步为 Web Component 的 attribute。如果需要在运行时动态修改属性，建议通过 <code>ref</code> 操作：</p>
+
+<pre><code>import { useRef, useEffect } from 'react';
+
+function App() {
+  const neonRef = useRef(null);
+
+  useEffect(() => {
+    neonRef.current?.setAttribute('color', '#00ccff');
+  }, []);
+
+  return (
+    &lt;neon-light ref={neonRef} glow={10} font-size={48}
+                style={{ width: 600, height: 120 }}&gt;
+      DYNAMIC NEON
+    &lt;/neon-light&gt;
+  );
+}</code></pre>
 
 <!-- ============================================================ -->
 <h2 id="compat">浏览器兼容性</h2>
