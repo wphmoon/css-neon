@@ -2,6 +2,8 @@
 
 纯原生 ES Module 霓虹灯特效 Web Component，基于 Shadow DOM v1 和 Custom Elements v1。支持文字和 SVG 两种内容，通过 CSS + SVG filter 实现霓虹发光效果。
 
+![demo](demo.gif)
+
 ## 项目结构
 
 ```
