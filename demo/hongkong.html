@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>neon-light Demo</title>
+  <style>
+    body {
+      background: #0a0a0a;
+      margin: 0;
+      padding: 40px;
+      font-family: sans-serif;
+    }
+    h2 { color: #666; margin: 40px 0 16px; font-size: 16px; }
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      align-items: center;
+    }
+    .card {
+      background: #111;
+      border-radius: 12px;
+      padding: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>1. Basic text neon</h2>
+  <div class="card">
+    <neon-light color="#ff69b4" glow="4" blur="5"  font-src="fonts/ChenYuluoyan-2.0-Thin.ttf" font-size="72" style="width:600px;height:120px">
+      你好叻啊
+    </neon-light>
+  </div>
+
+  <h2>2. Animated — flicker</h2>
+  <div class="card">
+    <neon-light color="#00ffcc" glow="5" animate="flicker" font-src="fonts/Aamjyc.ttf" font-size="72" style="width:600px;height:120px">
+      揸Fit人
+    </neon-light>
+  </div>
+
+  <h2>3. Animated — breath</h2>
+  <div class="card">
+    <neon-light color="#ffaa00" glow="12" animate="breath"  font-size="72" style="width:600px;height:120px">
+      中環廣場
+    </neon-light>
+  </div>
+
+  <h2>4. Animated — glitch</h2>
+  <div class="card">
+    <neon-light color="#ff3355" glow="14" animate="glitch" font-src="fonts/HYGaoJinFeiBaiTiW.ttf" font-size="64" style="width:600px;height:120px">
+      翠華餐廳
+    </neon-light>
+  </div>
+
+  <h2>5. Text + SVG icon</h2>
+  <div class="card">
+    <neon-light color="#ff69b4" glow="4" animate="flicker"
+    font-family="YouYuan" font-size="64" style="width:700px;height:120px">
+    亞洲夜總會
+    </neon-light>
+  </div>
+
+  <h2>6. Text and SVG with independent config</h2>
+  <div class="card">
+    <neon-light
+      color="#ff69b4" glow="3"
+      text-color="#00ffcc" text-animate="breath"
+      svg-color="#ff4444" svg-glow="20" svg-animate="glitch"
+      font-size="48" style="width:700px;height:120px">
+      鐳射
+      <svg viewBox="0 0 24 24" width="48" height="48">
+        <circle cx="12" cy="12" r="10"/>
+      </svg>
+    </neon-light>
+  </div>
+
+  <h2>7. Dashed effect</h2>
+  <div class="card">
+    <neon-light color="#ff69b4" glow="10" dashed font-src="fonts/HYGaoJinFeiBaiTiW.ttf" font-size="80" style="width:600px;height:120px">
+      珍寶海鮮舫
+    </neon-light>
+  </div>
+
+  <h2>8. SVG Broken — ratio 0.3 (few dark segments)</h2>
+  <div class="card">
+    <neon-light color="#ffaa00" glow="14"
+                svg-animate="broken" broken-ratio="0.3" svg-stroke-width="5"
+                font-size="48" src="hongkong.svg" svg-width="72" svg-height="72"
+                style="width:700px;height:180px">
+    </neon-light>
+  </div>
+
+  <h2>9. SVG Broken — ratio 0.7 (mostly broken, heavy flicker)</h2>
+  <div class="card">
+    <neon-light color="#ff3355" glow="14"
+                svg-animate="broken" broken-ratio="0.7" svg-stroke-width="5"
+                font-size="48" src="hongkong.svg" svg-width="72" svg-height="72"
+                style="width:700px;height:180px">
+    </neon-light>
+  </div>
+
+  <h2>10. SVG Flow — Marching Light</h2>
+  <div class="card">
+    <neon-light color="#00ccff" glow="12"
+                svg-animate="flow" svg-stroke-width="4"
+                font-size="48" src="hongkong.svg" svg-width="100" svg-height="100"
+                style="width:300px;height:100px">
+    </neon-light>
+  </div>
+
+  <h2>11. Per-path config — color + broken</h2>
+  <div class="card">
+    <neon-light color="#ffaa00" glow="14"
+                svg-animate="broken" broken-ratio="0.5" svg-stroke-width="5"
+                src="hongkong.svg" svg-width="72" svg-height="72"
+                path-config="5739: color:#ff4444, broken:true; 5741: color:#4488ff, broken:false"
+                font-size="48" style="width:700px;height:180px">
+    </neon-light>
+  </div>
+
+  <h2>12. Font-Src + Broken — text as paths with broken effect</h2>
+  <div class="card">
+    <neon-light color="#e40934" glow="5"
+                svg-animate="broken" broken-ratio="0.3" svg-stroke-width="3"
+                font-src="fonts/HYGaoJinFeiBaiTiW.ttf"
+                font-size="120" style="width:700px;height:180px">
+      九龍冰室
+    </neon-light>
+  </div>
+
+  <h2>13. Font-Src + Per-Char Config — color + broken per character</h2>
+  <div class="card">
+    <neon-light color="#ffaa00" glow="5"
+                svg-animate="broken" broken-ratio="0.5" svg-stroke-width="3"
+                font-src="fonts/HYGaoJinFeiBaiTiW.ttf"
+                path-config="0: color:#ff4444, broken:true; 3: color:#44ff88; 5: color:#4488ff, broken:true"
+                font-size="144" style="width:700px;height:280px">
+                翠華餐廳
+    </neon-light>
+  </div>
+
+  <h2>14. Font-Src + Flow — text marching light</h2>
+  <div class="card">
+    <neon-light color="#00ccff" glow="1"
+                svg-animate="flow" svg-stroke-width="3"
+                font-src="fonts/HYQinChuanManShuW.ttf"
+                font-size="120" style="width:700px;height:180px">
+                和聯勝
+    </neon-light>
+  </div>
+
+  <h2>15. Vertical Text</h2>
+  <div class="card">
+    <neon-light color="#ff69b4" glow="5" vertical font-size="48" style="width:200px;height:350px">
+      永旺麻雀
+    </neon-light>
+  </div>
+
+  <h2>19. Chase — sequential character flash</h2>
+  <div class="card">
+    <neon-light color="#ff69b4" glow="10" animate="chase" chase-delay="0.8"
+                font-size="64" speed="0.8" style="width:700px;height:180px">
+      正大藥房
+    </neon-light>
+  </div>
+
+  <h2>20. Chase with font-src — per-character path animation</h2>
+  <div class="card">
+    <neon-light color="#00ccff" glow="5"
+                svg-animate="eclipse" eclipse-delay="0.5" speed="0.5" svg-stroke-width="1"
+                font-src="fonts/HYQinChuanManShuW.ttf"
+                font-size="72" style="width:700px;height:180px">
+                正大藥房
+    </neon-light>
+  </div>
+
+  <h2>23. Eclipse with font-src — per-character path darkening</h2>
+  <div class="card">
+    <neon-light color="#00ccff" glow="4"
+                svg-animate="eclipse" eclipse-delay="0.25" svg-stroke-width="3"
+                font-src="fonts/HYQinChuanManShuW.ttf" dashed
+                font-size="72" style="width:700px;height:180px">
+                正大藥房
+    </neon-light>
+  </div>
+  <script type="module" src="../css-neon.js"></script>
+</body>
+</html>
