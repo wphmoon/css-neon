@@ -160,15 +160,7 @@ startY = textBlockTop + charH × 0.85  // baseline 偏移
 
 **eclipse 的延迟期亮度问题**：CSS `animation-delay` 正值期间，元素显示非动画态的静态样式。eclipse 需要字符初始是亮的，所以不设 `animation-fill-mode: backwards`，依赖元素的静态 CSS opacity=1 保持初始亮度，delay 结束后动画才介入将字符变暗。
 
-### 10. Demo GIF 生成
-
-**工具链**：Puppeteer（截图）+ sharp（缩放）+ gif-encoder-2（合成 GIF）。
-
-**踩坑**：`page.$('.card')` 在 bash inline `node -e` 中被解释为 shell 变量 `$` 展开。改用独立脚本文件解决。
-
-**结果**：688KB demo.gif，放在 README 顶部。
-
-### 11. 构建产物体积变化
+### 10. 构建产物体积变化
 
 | 阶段 | 大小 |
 |------|------|
