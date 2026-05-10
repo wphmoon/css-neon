@@ -25,6 +25,73 @@ function renderLightDom(el, width, height, font) {
   const hasSvg = svgParts.length > 0;
   const fullText = textParts.join(' ');
   const y = height * 0.62;
+  const vertical = textCfg.vertical;
+
+  // ── Vertical text layout ──
+  if (vertical && hasText) {
+    const numChars = fullText.length;
+    const charH = textCfg.fontSize;
+    const textBlockH = numChars * charH;
+    const textBlockW = font
+      ? Math.max(1, ...Array.from(fullText).map(ch => {
+          const g = font.charToGlyph(ch);
+          return ((g.advanceWidth || 0) * textCfg.fontSize / font.unitsPerEm);
+        }))
+      : textCfg.fontSize;
+    const textBlockTop = (height - textBlockH) / 2;
+    const startY = textBlockTop + charH * 0.85;
+    const svgMidY = textBlockTop + textBlockH / 2;
+
+    if (font) {
+      if (hasSvg) {
+        const svgTotalW = svgParts.reduce((s, svg) => s + (parseFloat(svg.getAttribute('width')) || 64), 0)
+          + Math.max(0, svgParts.length - 1) * GAP;
+        const totalW = textBlockW + GAP + svgTotalW;
+        const startX = (width - totalW) / 2;
+        renderTextAsPaths(backGroup, frontGroup, fullText, textCfg, svgCfg,
+                          startX + textBlockW / 2, startY, el, font, true);
+        let sx = startX + textBlockW + GAP;
+        for (const svg of svgParts) {
+          const sw = parseFloat(svg.getAttribute('width')) || 64;
+          appendSvgShapes(backGroup, frontGroup, svg, svgCfg, sx, svgMidY);
+          sx += sw + GAP;
+        }
+      } else {
+        renderTextAsPaths(backGroup, frontGroup, fullText, textCfg, svgCfg,
+                          width / 2, startY, el, font, true);
+      }
+      return { backGroup, frontGroup };
+    }
+
+    // Standard text vertical
+    if (hasSvg) {
+      const svgTotalW = svgParts.reduce((s, svg) => s + (parseFloat(svg.getAttribute('width')) || 64), 0)
+        + Math.max(0, svgParts.length - 1) * GAP;
+      const totalW = textBlockW + GAP + svgTotalW;
+      const startX = (width - totalW) / 2;
+      if (textCfg.animate === 'chase' || textCfg.animate === 'eclipse') {
+        const fn = textCfg.animate === 'chase' ? appendChaseTextLayers : appendEclipseTextLayers;
+        fn(backGroup, frontGroup, fullText, textCfg, startX + textBlockW / 2, startY, true);
+      } else {
+        appendTextLayers(backGroup, frontGroup, fullText, textCfg, startX + textBlockW / 2, startY, true);
+      }
+      let sx = startX + textBlockW + GAP;
+      for (const svg of svgParts) {
+        const sw = parseFloat(svg.getAttribute('width')) || 64;
+        appendSvgShapes(backGroup, frontGroup, svg, svgCfg, sx, svgMidY);
+        sx += sw + GAP;
+      }
+    } else {
+      if (textCfg.animate === 'chase' || textCfg.animate === 'eclipse') {
+        const fn = textCfg.animate === 'chase' ? appendChaseTextLayers : appendEclipseTextLayers;
+        fn(backGroup, frontGroup, fullText, textCfg, width / 2, startY, true);
+      } else {
+        appendTextLayers(backGroup, frontGroup, fullText, textCfg, width / 2, startY, true);
+      }
+    }
+    return { backGroup, frontGroup };
+  }
+  // ── End vertical layout ──
 
   // When font is available, render text as paths directly with text-like styling
   if (font && hasText) {
@@ -35,7 +102,7 @@ function renderLightDom(el, width, height, font) {
       const totalW = textW + GAP + svgTotalW;
       const startX = (width - totalW) / 2;
       renderTextAsPaths(backGroup, frontGroup, fullText, textCfg, svgCfg,
-                        startX + textW / 2, y, el, font);
+                        startX + textW / 2, y, el, font, false);
       let sx = startX + textW + GAP;
       for (const svg of svgParts) {
         const sw = parseFloat(svg.getAttribute('width')) || 64;
@@ -44,7 +111,7 @@ function renderLightDom(el, width, height, font) {
       }
     } else {
       renderTextAsPaths(backGroup, frontGroup, fullText, textCfg, svgCfg,
-                        width / 2, y, el, font);
+                        width / 2, y, el, font, false);
     }
     return { backGroup, frontGroup };
   }
@@ -58,7 +125,12 @@ function renderLightDom(el, width, height, font) {
     const totalW = textW + GAP + svgTotalW;
     const startX = (width - totalW) / 2;
 
-    appendTextLayers(backGroup, frontGroup, fullText, textCfg, startX + textW / 2, y, startX);
+    if (textCfg.animate === 'chase' || textCfg.animate === 'eclipse') {
+      const fn = textCfg.animate === 'chase' ? appendChaseTextLayers : appendEclipseTextLayers;
+      fn(backGroup, frontGroup, fullText, textCfg, startX + textW / 2, y, false);
+    } else {
+      appendTextLayers(backGroup, frontGroup, fullText, textCfg, startX + textW / 2, y, false);
+    }
 
     let sx = startX + textW + GAP;
     for (const svg of svgParts) {
@@ -67,7 +139,12 @@ function renderLightDom(el, width, height, font) {
       sx += sw + GAP;
     }
   } else if (hasText) {
-    appendTextLayers(backGroup, frontGroup, fullText, textCfg, width / 2, y, 0);
+    if (textCfg.animate === 'chase' || textCfg.animate === 'eclipse') {
+      const fn = textCfg.animate === 'chase' ? appendChaseTextLayers : appendEclipseTextLayers;
+      fn(backGroup, frontGroup, fullText, textCfg, width / 2, y, false);
+    } else {
+      appendTextLayers(backGroup, frontGroup, fullText, textCfg, width / 2, y, false);
+    }
   } else if (hasSvg) {
     // SVG only: center all SVGs
     const svgTotalW = svgParts.reduce((s, svg) => s + (parseFloat(svg.getAttribute('width')) || 64), 0)
@@ -105,7 +182,7 @@ function calcTextWidthPx(text, fontSize, font) {
 // Render text as glyph paths directly into back/front groups, with text-like
 // styling (front stroke=2, fill-opacity=0.4). Supports svg-animate broken/flow
 // and per-path config by reusing classifyShapes/parsePathConfig.
-function renderTextAsPaths(backGroup, frontGroup, text, textCfg, svgCfg, cx, y, host, font) {
+function renderTextAsPaths(backGroup, frontGroup, text, textCfg, svgCfg, cx, y, host, font, vertical) {
   const scale = textCfg.fontSize / font.unitsPerEm;
 
   let totalWidth = 0;
@@ -118,25 +195,80 @@ function renderTextAsPaths(backGroup, frontGroup, text, textCfg, svgCfg, cx, y, 
   }
   if (charData.length === 0) return;
 
-  const startX = cx - totalWidth / 2;
-
   const paths = [];
-  let curX = startX;
-  for (let i = 0; i < charData.length; i++) {
-    const { glyph, advance } = charData[i];
-    const gPath = glyph.getPath(curX, y, textCfg.fontSize);
-    const d = gPath.toPathData(2);
-    if (d) {
-      const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      el.setAttribute('d', d);
-      el.setAttribute('p-id', String(i));
-      paths.push(el);
+
+  if (vertical) {
+    let curY = y;
+    for (let i = 0; i < charData.length; i++) {
+      const { glyph } = charData[i];
+      const gPath = glyph.getPath(cx, curY, textCfg.fontSize);
+      const d = gPath.toPathData(2);
+      if (d) {
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        el.setAttribute('d', d);
+        el.setAttribute('p-id', String(i));
+        paths.push(el);
+      }
+      curY += textCfg.fontSize;
     }
-    curX += advance;
+  } else {
+    const startX = cx - totalWidth / 2;
+    let curX = startX;
+    for (let i = 0; i < charData.length; i++) {
+      const { glyph, advance } = charData[i];
+      const gPath = glyph.getPath(curX, y, textCfg.fontSize);
+      const d = gPath.toPathData(2);
+      if (d) {
+        const el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        el.setAttribute('d', d);
+        el.setAttribute('p-id', String(i));
+        paths.push(el);
+      }
+      curX += advance;
+    }
   }
   if (paths.length === 0) return;
 
   const dash = textCfg.dashed ? { 'stroke-dasharray': '180 100' } : {};
+
+  if (svgCfg.animate === 'chase' || svgCfg.animate === 'eclipse') {
+    const isChase = svgCfg.animate === 'chase';
+    const pathCfg = parsePathConfig(host.getAttribute('path-config'));
+    const delayPerChar = isChase ? (textCfg.chaseDelay || 0.3) : (textCfg.eclipseDelay || 0.3);
+    const totalDur = (paths.length * delayPerChar / (svgCfg.speed || 1)).toFixed(2);
+    const frontClass = isChase ? 'neon-chase-front' : 'neon-eclipse-front';
+    const backClass = isChase ? 'neon-chase-back' : 'neon-eclipse-back';
+    for (let i = 0; i < paths.length; i++) {
+      const override = pathCfg.get(String(i));
+      const color = (override && override.color) ? override.color : textCfg.color;
+      const style = `animation-delay:${(i * delayPerChar).toFixed(2)}s;animation-duration:${totalDur}s;animation-iteration-count:infinite`;
+
+      const backG = createSvgElement('g', {
+        filter: 'url(#neon-blur)',
+        stroke: color,
+        'stroke-width': String(textCfg.glow),
+        fill: 'none',
+        class: backClass,
+        style,
+        ...dash,
+      });
+      backG.appendChild(cloneShape(paths[i]));
+      backGroup.appendChild(backG);
+
+      const frontG = createSvgElement('g', {
+        stroke: color,
+        'stroke-width': '2',
+        fill: color,
+        'fill-opacity': '0.4',
+        class: frontClass,
+        style,
+        ...dash,
+      });
+      frontG.appendChild(cloneShape(paths[i]));
+      frontGroup.appendChild(frontG);
+    }
+    return;
+  }
 
   if (svgCfg.animate === 'broken') {
     const pathCfg = parsePathConfig(host.getAttribute('path-config'));
@@ -218,7 +350,7 @@ function appendTextFlowLayers(frontGroup, paths, cfg, svgCfg) {
   }
 }
 
-function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y, /* optional for dash bleed */ _unused) {
+function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y, vertical) {
   const base = {
     'font-family': cfg.fontFamily,
     'font-size': `${cfg.fontSize}px`,
@@ -229,13 +361,36 @@ function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y, /* optional f
     fill: cfg.color,
     'fill-opacity': '0.4',
     'text-anchor': 'middle',
-    x: String(cx),
-    y: String(y),
   };
   const dash = cfg.dashed ? { 'stroke-dasharray': '180 100' } : {};
 
+  if (vertical) {
+    const chars = [...text];
+    const dy = cfg.fontSize;
+
+    const backText = createSvgElement('text', { ...base, y: String(y), stroke: cfg.color, 'stroke-width': cfg.glow, filter: 'url(#neon-blur)', ...dash });
+    for (let i = 0; i < chars.length; i++) {
+      const tspan = createSvgElement('tspan', { x: String(cx), dy: i === 0 ? '0' : String(dy) });
+      tspan.textContent = chars[i];
+      backText.appendChild(tspan);
+    }
+    backGroup.appendChild(backText);
+
+    const frontText = createSvgElement('text', { ...base, y: String(y), stroke: cfg.color, 'stroke-width': 2, ...dash });
+    for (let i = 0; i < chars.length; i++) {
+      const tspan = createSvgElement('tspan', { x: String(cx), dy: i === 0 ? '0' : String(dy) });
+      tspan.textContent = chars[i];
+      frontText.appendChild(tspan);
+    }
+    frontGroup.appendChild(frontText);
+    return;
+  }
+
+  // Horizontal
   const backText = createSvgElement('text', {
     ...base,
+    x: String(cx),
+    y: String(y),
     stroke: cfg.color,
     'stroke-width': cfg.glow,
     filter: 'url(#neon-blur)',
@@ -246,11 +401,185 @@ function appendTextLayers(backGroup, frontGroup, text, cfg, cx, y, /* optional f
 
   const frontText = createSvgElement('text', {
     ...base,
+    x: String(cx),
+    y: String(y),
     stroke: cfg.color,
     'stroke-width': 2,
     ...dash,
   });
   frontText.textContent = text;
+  frontGroup.appendChild(frontText);
+}
+
+// Chase animation layers — per-character tspans with staggered animation-delay
+function appendChaseTextLayers(backGroup, frontGroup, text, cfg, cx, y, vertical) {
+  const chars = [...text];
+  const delayPerChar = cfg.chaseDelay || 0.3;
+  const totalDur = (chars.length * delayPerChar / (cfg.speed || 1)).toFixed(2);
+  const base = {
+    'font-family': cfg.fontFamily,
+    'font-size': `${cfg.fontSize}px`,
+    'font-weight': cfg.fontWeight,
+    'font-style': cfg.fontStyle,
+    'text-transform': cfg.textTransform,
+    'letter-spacing': `${cfg.letterSpacing}px`,
+    fill: cfg.color,
+    'fill-opacity': '0.4',
+    'text-anchor': 'middle',
+  };
+  const dash = cfg.dashed ? { 'stroke-dasharray': '180 100' } : {};
+
+  const style = (delay) => `animation-delay:${delay}s;animation-duration:${totalDur}s;animation-iteration-count:infinite`;
+
+  if (vertical) {
+    const dy = cfg.fontSize;
+    const backText = createSvgElement('text', {
+      ...base, y: String(y),
+      stroke: cfg.color, 'stroke-width': cfg.glow,
+      filter: 'url(#neon-blur)', ...dash,
+    });
+    for (let i = 0; i < chars.length; i++) {
+      const tspan = createSvgElement('tspan', {
+        x: String(cx), dy: i === 0 ? '0' : String(dy),
+        class: 'neon-chase-back',
+        style: style((i * delayPerChar).toFixed(2)),
+      });
+      tspan.textContent = chars[i];
+      backText.appendChild(tspan);
+    }
+    backGroup.appendChild(backText);
+
+    const frontText = createSvgElement('text', {
+      ...base, y: String(y),
+      stroke: cfg.color, 'stroke-width': 2, ...dash,
+    });
+    for (let i = 0; i < chars.length; i++) {
+      const tspan = createSvgElement('tspan', {
+        x: String(cx), dy: i === 0 ? '0' : String(dy),
+        class: 'neon-chase-front',
+        style: style((i * delayPerChar).toFixed(2)),
+      });
+      tspan.textContent = chars[i];
+      frontText.appendChild(tspan);
+    }
+    frontGroup.appendChild(frontText);
+    return;
+  }
+
+  // Horizontal
+  const backText = createSvgElement('text', {
+    ...base, x: String(cx), y: String(y),
+    stroke: cfg.color, 'stroke-width': cfg.glow,
+    filter: 'url(#neon-blur)', ...dash,
+  });
+  for (let i = 0; i < chars.length; i++) {
+    const tspan = createSvgElement('tspan', {
+      class: 'neon-chase-back',
+      style: style((i * delayPerChar).toFixed(2)),
+    });
+    tspan.textContent = chars[i];
+    backText.appendChild(tspan);
+  }
+  backGroup.appendChild(backText);
+
+  const frontText = createSvgElement('text', {
+    ...base, x: String(cx), y: String(y),
+    stroke: cfg.color, 'stroke-width': 2, ...dash,
+  });
+  for (let i = 0; i < chars.length; i++) {
+    const tspan = createSvgElement('tspan', {
+      class: 'neon-chase-front',
+      style: style((i * delayPerChar).toFixed(2)),
+    });
+    tspan.textContent = chars[i];
+    frontText.appendChild(tspan);
+  }
+  frontGroup.appendChild(frontText);
+}
+
+// Eclipse animation — all characters start bright, then go dark one by one
+function appendEclipseTextLayers(backGroup, frontGroup, text, cfg, cx, y, vertical) {
+  const chars = [...text];
+  const delayPerChar = cfg.eclipseDelay || 0.3;
+  const totalDur = (chars.length * delayPerChar / (cfg.speed || 1)).toFixed(2);
+  const base = {
+    'font-family': cfg.fontFamily,
+    'font-size': `${cfg.fontSize}px`,
+    'font-weight': cfg.fontWeight,
+    'font-style': cfg.fontStyle,
+    'text-transform': cfg.textTransform,
+    'letter-spacing': `${cfg.letterSpacing}px`,
+    fill: cfg.color,
+    'fill-opacity': '0.4',
+    'text-anchor': 'middle',
+  };
+  const dash = cfg.dashed ? { 'stroke-dasharray': '180 100' } : {};
+
+  const style = (delay) => `animation-delay:${delay}s;animation-duration:${totalDur}s;animation-iteration-count:infinite`;
+
+  if (vertical) {
+    const dy = cfg.fontSize;
+    const backText = createSvgElement('text', {
+      ...base, y: String(y),
+      stroke: cfg.color, 'stroke-width': cfg.glow,
+      filter: 'url(#neon-blur)', ...dash,
+    });
+    for (let i = 0; i < chars.length; i++) {
+      const tspan = createSvgElement('tspan', {
+        x: String(cx), dy: i === 0 ? '0' : String(dy),
+        class: 'neon-eclipse-back',
+        style: style((i * delayPerChar).toFixed(2)),
+      });
+      tspan.textContent = chars[i];
+      backText.appendChild(tspan);
+    }
+    backGroup.appendChild(backText);
+
+    const frontText = createSvgElement('text', {
+      ...base, y: String(y),
+      stroke: cfg.color, 'stroke-width': 2, ...dash,
+    });
+    for (let i = 0; i < chars.length; i++) {
+      const tspan = createSvgElement('tspan', {
+        x: String(cx), dy: i === 0 ? '0' : String(dy),
+        class: 'neon-eclipse-front',
+        style: style((i * delayPerChar).toFixed(2)),
+      });
+      tspan.textContent = chars[i];
+      frontText.appendChild(tspan);
+    }
+    frontGroup.appendChild(frontText);
+    return;
+  }
+
+  // Horizontal
+  const backText = createSvgElement('text', {
+    ...base, x: String(cx), y: String(y),
+    stroke: cfg.color, 'stroke-width': cfg.glow,
+    filter: 'url(#neon-blur)', ...dash,
+  });
+  for (let i = 0; i < chars.length; i++) {
+    const tspan = createSvgElement('tspan', {
+      class: 'neon-eclipse-back',
+      style: style((i * delayPerChar).toFixed(2)),
+    });
+    tspan.textContent = chars[i];
+    backText.appendChild(tspan);
+  }
+  backGroup.appendChild(backText);
+
+  const frontText = createSvgElement('text', {
+    ...base, x: String(cx), y: String(y),
+    stroke: cfg.color, 'stroke-width': 2, ...dash,
+  });
+  for (let i = 0; i < chars.length; i++) {
+    const tspan = createSvgElement('tspan', {
+      class: 'neon-eclipse-front',
+      style: style((i * delayPerChar).toFixed(2)),
+    });
+    tspan.textContent = chars[i];
+    frontText.appendChild(tspan);
+  }
   frontGroup.appendChild(frontText);
 }
 

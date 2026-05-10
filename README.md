@@ -52,7 +52,7 @@ utils.js → config.js → animations.js → renderer.js → neon-light.js → i
 |------|------|
 | `src/utils.js` | SVG 命名空间、元素创建、类型转换 |
 | `src/config.js` | 默认值、属性观察列表、配置级联解析 |
-| `src/animations.js` | flicker / breath / glitch / broken / flow 五种 CSS 动画 |
+| `src/animations.js` | flicker / breath / glitch / broken / flow / chase / eclipse 七种 CSS 动画 |
 | `src/renderer.js` | Light DOM 解析、文字/SVG 双层渲染、per-path 配置 |
 | `src/neon-light.js` | Custom Element 类：Shadow DOM、ResizeObserver、MutationObserver |
 | `src/index.js` | 入口：自动注册 `<neon-light>`、公开 `define()` API |
@@ -142,15 +142,18 @@ utils.js → config.js → animations.js → renderer.js → neon-light.js → i
 | `color` | color | `#ff69b4` | 霓虹灯颜色 |
 | `glow` | number | `10` | 外发光强度（影响 blur 的 stroke-width 倍率） |
 | `blur` | number | `4` | 高斯模糊量（`feGaussianBlur` 的 stdDeviation） |
-| `animate` | string | `none` | 动画预设：`none` / `flicker` / `breath` / `glitch` |
+| `animate` | string | `none` | 动画预设：见[动画预设](#动画预设)章节 |
 | `speed` | number | `1` | 动画速度倍率，越大越快 |
 | `dashed` | boolean | `false` | 是否启用虚线描边效果 |
 | `broken-ratio` | number | `0.5` | 破管比例 0–1，仅在 `svg-animate="broken"` 时生效 |
+| `chase-delay` | number | `0.3` | chase 动画每字闪烁间隔（秒） |
+| `eclipse-delay` | number | `0.3` | eclipse 动画每字变暗间隔（秒） |
 | `src` | URL | — | 外部 SVG 文件路径 |
 | `svg-width` | number | — | SVG 显示宽度（配合 `src` 或内联 SVG） |
 | `svg-height` | number | — | SVG 显示高度（配合 `src` 或内联 SVG） |
 | `font-src` | URL | — | 字体文件路径（TTF/OTF/WOFF），加载后将文字转为路径 |
 | `path-config` | string | — | Per-path / per-char 配置字符串 |
+| `vertical` | boolean | `false` | 竖排文字模式（逐字纵向排列） |
 
 ### 文字专属属性（`text-*` 前缀）
 
@@ -164,6 +167,9 @@ utils.js → config.js → animations.js → renderer.js → neon-light.js → i
 | `text-animate` | `animate` |
 | `text-speed` | `speed` |
 | `text-dashed` | `dashed` |
+| `text-vertical` | `vertical` |
+| `text-chase-delay` | `chase-delay` |
+| `text-eclipse-delay` | `eclipse-delay` |
 
 ```html
 <!-- 文字呼吸动画，绿色；SVG 常亮，粉红色 -->
@@ -178,6 +184,24 @@ utils.js → config.js → animations.js → renderer.js → neon-light.js → i
 </neon-light>
 ```
 
+### 竖排文字（`vertical`）
+
+启用后文字逐字纵向排列（从上到下），支持标准文字和 `font-src` 路径化两种渲染路径。
+
+```html
+<neon-light color="#ff69b4" glow="12" vertical font-size="48"
+            style="width:200px;height:400px">
+  CSS-NEON
+</neon-light>
+```
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `vertical` | boolean | `false` | 全局竖排 |
+| `text-vertical` | boolean | — | 仅文字竖排（覆盖 `vertical`） |
+
+竖排模式下，CJK 字符和拉丁字符均可正常工作。容器需要较高较窄（width 200px / height 400px 左右）。
+
 ### SVG 专属属性（`svg-*` 前缀）
 
 覆盖全局属性，仅作用于 SVG 形状。命名规则：`svg-` + 全局属性名。
@@ -187,11 +211,13 @@ utils.js → config.js → animations.js → renderer.js → neon-light.js → i
 | `svg-color` | color | — | 覆盖 `color` |
 | `svg-glow` | number | — | 覆盖 `glow` |
 | `svg-blur` | number | — | 覆盖 `blur` |
-| `svg-animate` | string | — | 覆盖 `animate`；额外支持 `broken` 和 `flow` |
+| `svg-animate` | string | — | 覆盖 `animate`；额外支持 `broken`、`flow`、`chase`、`eclipse` |
 | `svg-speed` | number | — | 覆盖 `speed` |
 | `svg-dashed` | boolean | — | 覆盖 `dashed` |
 | `svg-stroke-width` | number | `10` | SVG 形状描边宽度 |
 | `svg-broken-ratio` | number | — | 覆盖 `broken-ratio` |
+| `svg-chase-delay` | number | — | 覆盖 `chase-delay` |
+| `svg-eclipse-delay` | number | — | 覆盖 `eclipse-delay` |
 
 ## 配置级联规则
 
@@ -220,6 +246,39 @@ text-* > svg-* > 全局属性 > 默认值
 <neon-light color="#ff3355" animate="glitch" speed="1.5"
             font-size="64" style="width:600px;height:120px">
   GLITCH
+</neon-light>
+```
+
+### 逐字闪烁动画（chase / eclipse）
+
+对文字逐字生效。如果通过 `font-src` 加载了字体，需要改用 `svg-animate` 触发。
+
+| 值 | 效果 |
+|----|------|
+| `chase` | 所有字初始全暗，闪光从左到右逐字点亮，每次一个字亮 |
+| `eclipse` | 所有字初始全亮，暗斑从左到右逐字扫过，每次一个字暗 |
+
+`chase-delay`（默认 0.3）控制每字之间的闪烁间隔（秒）。值越小光斑移动越快，值越大越从容。
+
+```html
+<!-- 标准文字 chase：光斑逐字扫过 -->
+<neon-light color="#ff69b4" glow="10" animate="chase" chase-delay="0.3"
+            font-size="64" speed="1" style="width:700px;height:180px">
+  CSS-NEON
+</neon-light>
+
+<!-- eclipse：亮字逐字变暗 -->
+<neon-light color="#ff69b4" glow="10" animate="eclipse" eclipse-delay="0.5"
+            font-size="64" style="width:700px;height:180px">
+  CSS-NEON
+</neon-light>
+
+<!-- font-src 路径化 chase（需用 svg-animate） -->
+<neon-light color="#00ccff" glow="8"
+            svg-animate="chase" chase-delay="0.25" svg-stroke-width="3"
+            font-src="fonts/Inter-Regular.ttf"
+            font-size="72" style="width:700px;height:180px">
+  CSS-NEON
 </neon-light>
 ```
 

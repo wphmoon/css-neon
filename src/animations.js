@@ -87,12 +87,62 @@ function generateFlow(speed) {
   `;
 }
 
+function generateChase(speed) {
+  return `
+    @keyframes neon-chase {
+      0%      { opacity: 1; }
+      8%      { opacity: 0.6; }
+      20%     { opacity: 0.25; }
+      100%    { opacity: 0.25; }
+    }
+    @keyframes neon-chase-glow {
+      0%      { opacity: 0.8; }
+      12%     { opacity: 0.4; }
+      30%     { opacity: 0.3; }
+      100%    { opacity: 0.3; }
+    }
+    .neon-chase-front {
+      animation-name: neon-chase;
+      animation-timing-function: linear;
+    }
+    .neon-chase-back {
+      animation-name: neon-chase-glow;
+      animation-timing-function: linear;
+    }
+  `;
+}
+
+function generateEclipse(speed) {
+  return `
+    @keyframes neon-eclipse {
+      0%      { opacity: 0.25; }
+      30%     { opacity: 1; }
+      100%    { opacity: 1; }
+    }
+    @keyframes neon-eclipse-glow {
+      0%      { opacity: 0.3; }
+      40%     { opacity: 0.8; }
+      100%    { opacity: 0.8; }
+    }
+    .neon-eclipse-front {
+      animation-name: neon-eclipse;
+      animation-timing-function: linear;
+    }
+    .neon-eclipse-back {
+      animation-name: neon-eclipse-glow;
+      animation-timing-function: linear;
+    }
+  `;
+}
+
 const ANIMATION_GENERATORS = {
   flicker: generateFlicker,
   breath: generateBreath,
   glitch: generateGlitch,
   broken: generateBroken,
   flow: generateFlow,
+  chase: generateChase,
+  eclipse: generateEclipse,
 };
 
 function generateAnimationStyle(animateName, speed) {

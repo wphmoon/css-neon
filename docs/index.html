@@ -118,8 +118,10 @@
   <a href="#svg-attrs">SVG 专属属性</a>
   <a href="#cascade">配置级联规则</a>
   <a href="#animations">动画预设</a>
+  <a href="#chase-eclipse">逐字闪烁 chase / eclipse</a>
   <a href="#broken-flow">SVG 断管 &amp; 流光</a>
   <a href="#path-config">Per-Path / Per-Char 配置</a>
+  <a href="#vertical-text">竖排文字</a>
   <a href="#typography">排版属性</a>
   <a href="#css-props">CSS 自定义属性</a>
   <a href="#js-api">JavaScript API</a>
@@ -174,7 +176,7 @@
   <tr><th>模块</th><th>职责</th></tr>
   <tr><td><code>src/utils.js</code></td><td>SVG 命名空间、元素创建、类型转换</td></tr>
   <tr><td><code>src/config.js</code></td><td>默认值、属性观察列表、配置级联解析</td></tr>
-  <tr><td><code>src/animations.js</code></td><td>flicker / breath / glitch / broken / flow 五种 CSS 动画</td></tr>
+  <tr><td><code>src/animations.js</code></td><td>flicker / breath / glitch / broken / flow / chase / eclipse 七种 CSS 动画</td></tr>
   <tr><td><code>src/renderer.js</code></td><td>Light DOM 解析、文字/SVG 双层渲染、per-path 配置</td></tr>
   <tr><td><code>src/neon-light.js</code></td><td>Custom Element 类：Shadow DOM、ResizeObserver、MutationObserver</td></tr>
   <tr><td><code>src/index.js</code></td><td>入口：自动注册 <code>&lt;neon-light&gt;</code>、公开 <code>define()</code> API</td></tr>
@@ -264,11 +266,32 @@
   <tr><td><code>speed</code></td><td>number</td><td><code>1</code></td><td>动画速度倍率，越大越快</td></tr>
   <tr><td><code>dashed</code></td><td>boolean</td><td><code>false</code></td><td>是否启用虚线描边</td></tr>
   <tr><td><code>broken-ratio</code></td><td>number</td><td><code>0.5</code></td><td>破管比例 0–1<br>仅在 <code>svg-animate="broken"</code> 时生效</td></tr>
+  <tr><td><code>chase-delay</code></td><td>number</td><td><code>0.3</code></td><td>chase 动画每字闪烁间隔（秒）</td></tr>
+  <tr><td><code>eclipse-delay</code></td><td>number</td><td><code>0.3</code></td><td>eclipse 动画每字变暗间隔（秒）</td></tr>
   <tr><td><code>src</code></td><td>URL</td><td>—</td><td>外部 SVG 文件路径</td></tr>
   <tr><td><code>svg-width</code></td><td>number</td><td>—</td><td>SVG 显示宽度（配合 <code>src</code> 或内联 SVG）</td></tr>
   <tr><td><code>svg-height</code></td><td>number</td><td>—</td><td>SVG 显示高度（配合 <code>src</code> 或内联 SVG）</td></tr>
   <tr><td><code>font-src</code></td><td>URL</td><td>—</td><td>字体文件路径（TTF/OTF/WOFF），加载后将文字转为 glyph 路径</td></tr>
   <tr><td><code>path-config</code></td><td>string</td><td>—</td><td>Per-path / per-char 颜色和破管配置</td></tr>
+  <tr><td><code>vertical</code></td><td>boolean</td><td><code>false</code></td><td>竖排文字模式（逐字纵向排列）</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="vertical-text">竖排文字 <span class="badge badge-new">new</span></h2>
+
+<p>启用 <code>vertical</code> 后，文字逐字纵向排列（从上到下），支持标准文字和 <code>font-src</code> 路径化两种渲染路径。CJK 字符和拉丁字符均可正常竖排。</p>
+
+<pre><code>&lt;neon-light color="#ff69b4" glow="12" <strong>vertical</strong> font-size="48"
+            style="width:200px;height:400px"&gt;
+  CSS-NEON
+&lt;/neon-light&gt;</code></pre>
+
+<p>竖排模式下容器需要较高较窄（建议 width 200px / height 400px）。<code>text-vertical</code> 可以单独控制文字竖排：</p>
+
+<table>
+  <tr><th>属性</th><th>类型</th><th>默认值</th><th>说明</th></tr>
+  <tr><td><code>vertical</code></td><td>boolean</td><td><code>false</code></td><td>全局竖排</td></tr>
+  <tr><td><code>text-vertical</code></td><td>boolean</td><td>—</td><td>仅文字竖排（覆盖 <code>vertical</code>）</td></tr>
 </table>
 
 <!-- ============================================================ -->
@@ -284,6 +307,9 @@
   <tr><td><code>text-animate</code></td><td><code>animate</code></td></tr>
   <tr><td><code>text-speed</code></td><td><code>speed</code></td></tr>
   <tr><td><code>text-dashed</code></td><td><code>dashed</code></td></tr>
+  <tr><td><code>text-vertical</code></td><td><code>vertical</code></td></tr>
+  <tr><td><code>text-chase-delay</code></td><td><code>chase-delay</code></td></tr>
+  <tr><td><code>text-eclipse-delay</code></td><td><code>eclipse-delay</code></td></tr>
 </table>
 
 <pre><code>&lt;neon-light
@@ -306,11 +332,13 @@
   <tr><td><code>svg-color</code></td><td>color</td><td>—</td><td>覆盖 <code>color</code></td></tr>
   <tr><td><code>svg-glow</code></td><td>number</td><td>—</td><td>覆盖 <code>glow</code></td></tr>
   <tr><td><code>svg-blur</code></td><td>number</td><td>—</td><td>覆盖 <code>blur</code></td></tr>
-  <tr><td><code>svg-animate</code></td><td>string</td><td>—</td><td>覆盖 <code>animate</code>；额外支持 <code>broken</code> 和 <code>flow</code></td></tr>
+  <tr><td><code>svg-animate</code></td><td>string</td><td>—</td><td>覆盖 <code>animate</code>；额外支持 <code>broken</code>、<code>flow</code>、<code>chase</code>、<code>eclipse</code></td></tr>
   <tr><td><code>svg-speed</code></td><td>number</td><td>—</td><td>覆盖 <code>speed</code></td></tr>
   <tr><td><code>svg-dashed</code></td><td>boolean</td><td>—</td><td>覆盖 <code>dashed</code></td></tr>
   <tr><td><code>svg-stroke-width</code></td><td>number</td><td><code>10</code></td><td>SVG 形状描边宽度</td></tr>
   <tr><td><code>svg-broken-ratio</code></td><td>number</td><td>—</td><td>覆盖 <code>broken-ratio</code></td></tr>
+  <tr><td><code>svg-chase-delay</code></td><td>number</td><td>—</td><td>覆盖 <code>chase-delay</code></td></tr>
+  <tr><td><code>svg-eclipse-delay</code></td><td>number</td><td>—</td><td>覆盖 <code>eclipse-delay</code></td></tr>
 </table>
 
 <!-- ============================================================ -->
@@ -345,6 +373,44 @@
             font-size="64" style="width:600px;height:120px"&gt;
   GLITCH
 &lt;/neon-light&gt;</code></pre>
+
+<h3 id="chase-eclipse">逐字闪烁动画（chase / eclipse） <span class="badge badge-new">new</span></h3>
+
+<p>对文字逐字生效的追光动画。所有字使用同一套动画，通过错开的 <code>animation-delay</code> 实现依次闪亮（chase）或依次变暗（eclipse）。</p>
+
+<table>
+  <tr><th>值</th><th>初始状态</th><th>效果</th></tr>
+  <tr><td><code>chase</code></td><td>全部暗</td><td>闪光从左到右逐字点亮，一次亮一字</td></tr>
+  <tr><td><code>eclipse</code></td><td>全部亮</td><td>暗斑从左到右逐字扫过，一次暗一字</td></tr>
+</table>
+
+<p><code>chase-delay</code> / <code>eclipse-delay</code>（默认 0.3 秒）控制每字间隔。<code>speed</code> 影响整轮周期快慢。</p>
+
+<pre><code>&lt;!-- 标准 chase：光斑逐字扫过 --&gt;
+&lt;neon-light color="#ff69b4" glow="10"
+            <strong>animate="chase" chase-delay="0.3"</strong>
+            font-size="64" speed="1" style="width:700px;height:180px"&gt;
+  CSS-NEON
+&lt;/neon-light&gt;
+
+&lt;!-- eclipse：亮字逐字变暗 --&gt;
+&lt;neon-light color="#ff69b4" glow="10"
+            <strong>animate="eclipse" eclipse-delay="0.5"</strong>
+            font-size="64" style="width:700px;height:180px"&gt;
+  CSS-NEON
+&lt;/neon-light&gt;
+
+&lt;!-- font-src 路径化 chase（需用 svg-animate） --&gt;
+&lt;neon-light color="#00ccff" glow="8"
+            <strong>svg-animate="chase" chase-delay="0.25" svg-stroke-width="3"</strong>
+            font-src="fonts/Inter-Regular.ttf"
+            font-size="72" style="width:700px;height:180px"&gt;
+  CSS-NEON
+&lt;/neon-light&gt;</code></pre>
+
+<div class="note">
+  <strong>实现原理：</strong>每个字符的动画时长 = 字符数 × delay / speed。动画在开头短暂闪变（亮→暗 或 暗→亮），之后保持常态直至整轮结束，<code>infinite</code> 循环。这样保证了每一轮的节奏完全一致。
+</div>
 
 <h3 id="broken-flow">SVG 专属动画 <span class="badge badge-svg">svg-only</span></h3>
 

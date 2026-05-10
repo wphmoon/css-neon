@@ -15,6 +15,9 @@ const DEFAULTS = {
   letterSpacing: 0,
   svgStrokeWidth: 10,
   brokenRatio: 0.5,
+  vertical: false,
+  chaseDelay: 0.3,
+  eclipseDelay: 0.3,
 };
 
 // Attributes that trigger re-render on change
@@ -26,6 +29,9 @@ const OBSERVED_ATTRS = [
   'font-family', 'font-size', 'font-weight', 'font-style', 'text-transform', 'letter-spacing',
   'src', 'svg-width', 'svg-height',
   'font-src',
+  'vertical', 'text-vertical',
+  'chase-delay', 'text-chase-delay', 'svg-chase-delay',
+  'eclipse-delay', 'text-eclipse-delay', 'svg-eclipse-delay',
 ];
 
 // Property map: 'text-color' → { target: 'text', prop: 'color' }
@@ -46,9 +52,16 @@ const PREFIX_MAP = {
   'svg-broken-ratio': ['svg', 'brokenRatio'],
 };
 
+// Convert camelCase to kebab-case for HTML attribute lookup
+function camelToKebab(str) {
+  if (!str) return str;
+  return str.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
+}
+
 // Read attribute value from element, fall through cascade chain
 function readAttr(el, name) {
-  return el.getAttribute(name);
+  if (!name) return null;
+  return el.getAttribute(camelToKebab(name));
 }
 
 function resolveConfig(el, contentType) {
@@ -76,12 +89,14 @@ function resolveConfig(el, contentType) {
     fontStyle: get('fontStyle'),
     textTransform: get('textTransform'),
     letterSpacing: parseNumber(get('letterSpacing'), DEFAULTS.letterSpacing),
+    vertical: parseBoolean(get('vertical')),
     svgStrokeWidth: parseNumber(get('svgStrokeWidth'), DEFAULTS.svgStrokeWidth),
-    // Read kebab-case attribute directly (get() uses camelCase and won't match kebab attr)
     brokenRatio: parseNumber(
-      readAttr(el, contentType !== 'host' ? `${contentType}-broken-ratio` : null) ||
-      readAttr(el, 'broken-ratio') ||
-      DEFAULTS.brokenRatio, DEFAULTS.brokenRatio),
+      readAttr(el, contentType !== 'host' ? `${contentType}-brokenRatio` : null) ||
+      get('brokenRatio'),
+      DEFAULTS.brokenRatio),
+    chaseDelay: parseNumber(get('chaseDelay'), DEFAULTS.chaseDelay),
+    eclipseDelay: parseNumber(get('eclipseDelay'), DEFAULTS.eclipseDelay),
   };
 }
 
